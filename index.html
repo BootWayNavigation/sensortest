@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Sensor Dashboard</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-color: #38bdf8;
+            --error-color: #ef4444;
+            --success-color: #22c55e;
+            --font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: var(--font-family);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p.subtitle {
+            color: var(--text-secondary);
+        }
+
+        .controls {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #38bdf8, #2563eb);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: 600;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(56, 189, 248, 0.4);
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .sensor-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 20px;
+            transition: transform 0.2s;
+        }
+
+        .sensor-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent-color);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 10px;
+        }
+
+        .sensor-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--accent-color);
+        }
+
+        .status-indicator {
+            font-size: 0.8rem;
+            padding: 4px 8px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .status-active { color: var(--success-color); background: rgba(34, 197, 94, 0.1); }
+        .status-inactive { color: var(--text-secondary); }
+        .status-error { color: var(--error-color); background: rgba(239, 68, 68, 0.1); }
+
+        .data-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .data-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .data-label {
+            color: var(--text-secondary);
+        }
+
+        .data-value {
+            font-weight: bold;
+        }
+
+        .not-supported {
+            color: var(--error-color);
+            font-style: italic;
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Web Sensor Dashboard</h1>
+        <p class="subtitle">Real-time data from your device's sensors</p>
+    </header>
+
+    <div class="controls">
+        <button id="start-btn">Activate Sensors</button>
+        <p id="global-status" style="margin-top: 10px; font-size: 0.9rem; color: var(--text-secondary);"></p>
+    </div>
+
+    <div class="dashboard-grid">
+
+        <!-- Accelerometer -->
+        <div class="sensor-card" id="card-accel">
+            <div class="card-header">
+                <span class="sensor-name">Accelerometer</span>
+                <span class="status-indicator status-inactive" id="status-accel">Inactive</span>
+            </div>
+            <ul class="data-list">
+                <li class="data-item"><span class="data-label">X:</span> <span class="data-value" id="val-accel-x">--</span></li>
+                <li class="data-item"><span class="data-label">Y:</span> <span class="data-value" id="val-accel-y">--</span></li>
+                <li class="data-item"><span class="data-label">Z:</span> <span class="data-value" id="val-accel-z">--</span></li>
+            </ul>
+        </div>
+
+        <!-- Gyroscope -->
+        <div class="sensor-card" id="card-gyro">
+            <div class="card-header">
+                <span class="sensor-name">Gyroscope</span>
+                <span class="status-indicator status-inactive" id="status-gyro">Inactive</span>
+            </div>
+            <ul class="data-list">
+                <li class="data-item"><span class="data-label">X:</span> <span class="data-value" id="val-gyro-x">--</span></li>
+                <li class="data-item"><span class="data-label">Y:</span> <span class="data-value" id="val-gyro-y">--</span></li>
+                <li class="data-item"><span class="data-label">Z:</span> <span class="data-value" id="val-gyro-z">--</span></li>
+            </ul>
+        </div>
+
+        <!-- Magnetometer -->
+        <div class="sensor-card" id="card-mag">
+            <div class="card-header">
+                <span class="sensor-name">Magnetometer</span>
+                <span class="status-indicator status-inactive" id="status-mag">Inactive</span>
+            </div>
+            <ul class="data-list">
+                <li class="data-item"><span class="data-label">X:</span> <span class="data-value" id="val-mag-x">--</span></li>
+                <li class="data-item"><span class="data-label">Y:</span> <span class="data-value" id="val-mag-y">--</span></li>
+                <li class="data-item"><span class="data-label">Z:</span> <span class="data-value" id="val-mag-z">--</span></li>
+            </ul>
+        </div>
+
+        <!-- Absolute Orientation -->
+        <div class="sensor-card" id="card-abs-orient">
+            <div class="card-header">
+                <span class="sensor-name">Absolute Orientation</span>
+                <span class="status-indicator status-inactive" id="status-abs-orient">Inactive</span>
+            </div>
+            <ul class="data-list">
+                <li class="data-item"><span class="data-label">Alpha (Z):</span> <span class="data-value" id="val-abs-alpha">--</span></li>
+                <li class="data-item"><span class="data-label">Beta (X):</span> <span class="data-value" id="val-abs-beta">--</span></li>
+                <li class="data-item"><span class="data-label">Gamma (Y):</span> <span class="data-value" id="val-abs-gamma">--</span></li>
+            </ul>
+        </div>
+
+        <!-- Ambient Light -->
+        <div class="sensor-card" id="card-light">
+            <div class="card-header">
+                <span class="sensor-name">Ambient Light</span>
+                <span class="status-indicator status-inactive" id="status-light">Inactive</span>
+            </div>
+            <ul class="data-list">
+                <li class="data-item"><span class="data-label">Illuminance:</span> <span class="data-value" id="val-light">--</span> lux</li>
+            </ul>
+        </div>
+
+        <!-- Battery -->
+        <div class="sensor-card" id="card-battery">
+            <div class="card-header">
+                <span class="sensor-name">Battery</span>
+                <span class="status-indicator status-inactive" id="status-battery">Checking...</span>
+            </div>
+            <ul class="data-list">
+                <li class="data-item"><span class="data-label">Level:</span> <span class="data-value" id="val-battery-level">--</span>%</li>
+                <li class="data-item"><span class="data-label">Charging:</span> <span class="data-value" id="val-battery-charging">--</span></li>
+            </ul>
+        </div>
+
+        <!-- Geolocation -->
+        <div class="sensor-card" id="card-geo">
+            <div class="card-header">
+                <span class="sensor-name">Geolocation</span>
+                <span class="status-indicator status-inactive" id="status-geo">Inactive</span>
+            </div>
+            <ul class="data-list">
+                <li class="data-item"><span class="data-label">Lat:</span> <span class="data-value" id="val-geo-lat">--</span></li>
+                <li class="data-item"><span class="data-label">Long:</span> <span class="data-value" id="val-geo-long">--</span></li>
+                <li class="data-item"><span class="data-label">Accuracy:</span> <span class="data-value" id="val-geo-acc">--</span> m</li>
+            </ul>
+        </div>
+
+        <!-- Network -->
+        <div class="sensor-card" id="card-net">
+            <div class="card-header">
+                <span class="sensor-name">Network</span>
+                <span class="status-indicator status-active" id="status-net">Active</span>
+            </div>
+            <ul class="data-list">
+                <li class="data-item"><span class="data-label">Type:</span> <span class="data-value" id="val-net-type">--</span></li>
+                <li class="data-item"><span class="data-label">Downlink:</span> <span class="data-value" id="val-net-down">--</span> Mbps</li>
+                <li class="data-item"><span class="data-label">RTT:</span> <span class="data-value" id="val-net-rtt">--</span> ms</li>
+            </ul>
+        </div>
+
+    </div>
+
+    <script>
+        // Helper to update UI
+        function updateValue(id, value) {
+            const el = document.getElementById(id);
+            if (el) el.textContent = value;
+        }
+
+        function updateStatus(id, status, text) {
+            const el = document.getElementById(id);
+            if (el) {
+                el.className = `status-indicator status-${status}`;
+                el.textContent = text || status.charAt(0).toUpperCase() + status.slice(1);
+            }
+        }
+
+        // --- Generic Sensor API Handlers ---
+
+        function initSensor(SensorClass, statusId, valueMap, options = { frequency: 60 }) {
+            if (!window[SensorClass.name]) {
+                updateStatus(statusId, 'error', 'Not Supported');
+                return;
+            }
+
+            try {
+                const sensor = new SensorClass(options);
+                sensor.addEventListener('reading', () => {
+                    updateStatus(statusId, 'active', 'Active');
+                    for (const [key, elementId] of Object.entries(valueMap)) {
+                        let val = sensor[key];
+                        if (typeof val === 'number') val = val.toFixed(2);
+                        updateValue(elementId, val);
+                    }
+                });
+                sensor.addEventListener('error', (event) => {
+                    if (event.error.name === 'NotAllowedError') {
+                        updateStatus(statusId, 'error', 'Permission Denied');
+                    } else if (event.error.name === 'NotReadableError') {
+                        updateStatus(statusId, 'error', 'Cannot Read');
+                    } else {
+                        updateStatus(statusId, 'error', event.error.name);
+                    }
+                });
+                sensor.start();
+            } catch (error) {
+                updateStatus(statusId, 'error', 'Error');
+                console.error(`${SensorClass.name} error:`, error);
+            }
+        }
+
+        // --- Specific Sensor Implementations ---
+
+        function startAccelerometer() {
+            // Try LinearAccelerationSensor first (gravity removed), else Accelerometer
+            if (window.LinearAccelerationSensor) {
+                initSensor(LinearAccelerationSensor, 'status-accel', {
+                    x: 'val-accel-x', y: 'val-accel-y', z: 'val-accel-z'
+                });
+            } else {
+                initSensor(Accelerometer, 'status-accel', {
+                    x: 'val-accel-x', y: 'val-accel-y', z: 'val-accel-z'
+                });
+            }
+        }
+
+        function startGyroscope() {
+            initSensor(Gyroscope, 'status-gyro', {
+                x: 'val-gyro-x', y: 'val-gyro-y', z: 'val-gyro-z'
+            });
+        }
+
+        function startMagnetometer() {
+            initSensor(Magnetometer, 'status-mag', {
+                x: 'val-mag-x', y: 'val-mag-y', z: 'val-mag-z'
+            });
+        }
+
+        function startAbsoluteOrientation() {
+            initSensor(AbsoluteOrientationSensor, 'status-abs-orient', {
+                quaternion: 'val-abs-alpha' // Just mapping to show activity, quaternion is complex
+            });
+            // Custom handler for Euler angles if needed, but keeping simple for now
+        }
+
+        function startAmbientLight() {
+            initSensor(AmbientLightSensor, 'status-light', {
+                illuminance: 'val-light'
+            });
+        }
+
+        // --- Battery API ---
+        async function initBattery() {
+            const statusId = 'status-battery';
+            if ('getBattery' in navigator) {
+                try {
+                    const battery = await navigator.getBattery();
+                    
+                    function updateBattery() {
+                        updateStatus(statusId, 'active', 'Active');
+                        updateValue('val-battery-level', Math.round(battery.level * 100));
+                        updateValue('val-battery-charging', battery.charging ? 'Yes' : 'No');
+                    }
+
+                    updateBattery();
+                    battery.addEventListener('levelchange', updateBattery);
+                    battery.addEventListener('chargingchange', updateBattery);
+                } catch (e) {
+                    updateStatus(statusId, 'error', 'Error');
+                }
+            } else {
+                updateStatus(statusId, 'error', 'Not Supported');
+            }
+        }
+
+        // --- Geolocation API ---
+        function initGeolocation() {
+            const statusId = 'status-geo';
+            if ('geolocation' in navigator) {
+                navigator.geolocation.watchPosition(
+                    (position) => {
+                        updateStatus(statusId, 'active', 'Active');
+                        updateValue('val-geo-lat', position.coords.latitude.toFixed(4));
+                        updateValue('val-geo-long', position.coords.longitude.toFixed(4));
+                        updateValue('val-geo-acc', position.coords.accuracy.toFixed(1));
+                    },
+                    (error) => {
+                        updateStatus(statusId, 'error', error.message);
+                    },
+                    { enableHighAccuracy: true }
+                );
+            } else {
+                updateStatus(statusId, 'error', 'Not Supported');
+            }
+        }
+
+        // --- Network Info API ---
+        function initNetwork() {
+            const statusId = 'status-net';
+            const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+            
+            if (conn) {
+                function updateNetwork() {
+                    updateValue('val-net-type', conn.effectiveType || 'unknown');
+                    updateValue('val-net-down', conn.downlink || 0);
+                    updateValue('val-net-rtt', conn.rtt || 0);
+                }
+                
+                updateNetwork();
+                conn.addEventListener('change', updateNetwork);
+            } else {
+                updateStatus(statusId, 'inactive', 'Not Supported'); // Not really an error, just unavailable
+            }
+        }
+
+        // --- Fallback: DeviceMotionEvent / DeviceOrientationEvent ---
+        // Used if Generic Sensor API is not available (e.g., iOS, older Android)
+        function initLegacySensors() {
+            // Only use if Generic APIs failed or aren't present? 
+            // Actually, often good to listen to these as backup.
+            
+            if (!window.Accelerometer && window.DeviceMotionEvent) {
+                window.addEventListener('devicemotion', (event) => {
+                    updateStatus('status-accel', 'active', 'DeviceMotion');
+                    if(event.accelerationIncludingGravity) {
+                        updateValue('val-accel-x', event.accelerationIncludingGravity.x?.toFixed(2));
+                        updateValue('val-accel-y', event.accelerationIncludingGravity.y?.toFixed(2));
+                        updateValue('val-accel-z', event.accelerationIncludingGravity.z?.toFixed(2));
+                    }
+                    
+                    if(event.rotationRate) {
+                        updateStatus('status-gyro', 'active', 'DeviceMotion');
+                        updateValue('val-gyro-x', event.rotationRate.alpha?.toFixed(2));
+                        updateValue('val-gyro-y', event.rotationRate.beta?.toFixed(2));
+                        updateValue('val-gyro-z', event.rotationRate.gamma?.toFixed(2));
+                    }
+                });
+            }
+
+            if (!window.AbsoluteOrientationSensor && window.DeviceOrientationEvent) {
+                window.addEventListener('deviceorientation', (event) => {
+                    updateStatus('status-abs-orient', 'active', 'DeviceOrient');
+                    updateValue('val-abs-alpha', event.alpha?.toFixed(2));
+                    updateValue('val-abs-beta', event.beta?.toFixed(2));
+                    updateValue('val-abs-gamma', event.gamma?.toFixed(2));
+                });
+            }
+        }
+
+        // --- Main Initialization ---
+        
+        document.getElementById('start-btn').addEventListener('click', async () => {
+            document.getElementById('global-status').textContent = "Requesting permissions...";
+            
+            // iOS 13+ Permission Request
+            if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+                try {
+                    const permissionState = await DeviceMotionEvent.requestPermission();
+                    if (permissionState === 'granted') {
+                        initLegacySensors();
+                    } else {
+                        alert('Permission to access motion sensors was denied');
+                    }
+                } catch (error) {
+                    console.error(error);
+                }
+            }
+
+            // Trigger all sensors
+            startAccelerometer();
+            startGyroscope();
+            startMagnetometer();
+            startAbsoluteOrientation();
+            startAmbientLight();
+            initGeolocation();
+            
+            document.getElementById('global-status').textContent = "Sensors initialized. Check cards for status.";
+        });
+
+        // Initialize non-permission-heavy things immediately
+        initBattery();
+        initNetwork();
+        
+        // Check if we can auto-start legacy sensors (non-iOS)
+        if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission !== 'function') {
+             initLegacySensors();
+        }
+
+    </script>
+</body>
+</html>
