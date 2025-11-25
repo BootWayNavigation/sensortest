@@ -338,473 +338,463 @@
             <ul class="data-list">
                 <li class="data-item"><span class="data-label">Heading:</span> <span class="data-value"
                         id="val-compass-heading">--</span>°</li>
-                <li class="data-item"><span class="data-label">Direction:</span> <span class="data-value"
-                        id="val-compass-dir">--</span></li>
-                <li class="data-item"><span class="data-label">Accuracy:</span> <span class="data-value"
-                        id="val-compass-acc">--</span>°</li>
-            </ul>
-        </div>
+                }
 
-    </div>
-
-    <script type="text/javascript">
-        // Helper to update UI
-        function updateValue(id, value) {
-            const el = document.getElementById(id);
-            if (el) el.textContent = value;
-        }
-
-        function updateStatus(id, status, text) {
-            const el = document.getElementById(id);
-            if (el) {
+                function updateStatus(id, status, text) {
+                const el = document.getElementById(id);
+                if (el) {
                 el.className = `status-indicator status-${status}`;
                 el.textContent = text || status.charAt(0).toUpperCase() + status.slice(1);
-            }
-        }
+                }
+                }
 
-        // Detect iOS
-        function isIOS() {
-            return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                // Detect iOS
+                function isIOS() {
+                return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
                 (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-        }
+                }
 
-        // --- HTTPS Check ---
-        if (!window.isSecureContext) {
-            const controls = document.querySelector('.controls');
-            const warning = document.createElement('div');
-            warning.style.backgroundColor = 'rgba(239, 68, 68, 0.2)';
-            warning.style.border = '1px solid #ef4444';
-            warning.style.color = '#fca5a5';
-            warning.style.padding = '10px';
-            warning.style.borderRadius = '8px';
-            warning.style.marginBottom = '20px';
-            warning.style.textAlign = 'center';
-            warning.innerHTML = '<strong>Warning:</strong> Not running in a Secure Context (HTTPS). Most sensors will not work.';
-            controls.insertBefore(warning, controls.firstChild);
-        }
+                // --- HTTPS Check ---
+                if (!window.isSecureContext) {
+                const controls = document.querySelector('.controls');
+                const warning = document.createElement('div');
+                warning.style.backgroundColor = 'rgba(239, 68, 68, 0.2)';
+                warning.style.border = '1px solid #ef4444';
+                warning.style.color = '#fca5a5';
+                warning.style.padding = '10px';
+                warning.style.borderRadius = '8px';
+                warning.style.marginBottom = '20px';
+                warning.style.textAlign = 'center';
+                warning.innerHTML = '<strong>Warning:</strong> Not running in a Secure Context (HTTPS). Most sensors
+                will not work.';
+                controls.insertBefore(warning, controls.firstChild);
+                }
 
-        // --- Generic Sensor API Handlers ---
+                // --- Generic Sensor API Handlers ---
 
-        function initSensor(SensorClass, statusId, valueMap, options = { frequency: 60 }) {
-            if (!window[SensorClass.name]) {
+                function initSensor(SensorClass, statusId, valueMap, options = { frequency: 60 }) {
+                if (!window[SensorClass.name]) {
                 console.log(`${SensorClass.name} not supported natively.`);
                 return false;
-            }
+                }
 
-            try {
+                try {
                 const sensor = new SensorClass(options);
                 sensor.addEventListener('reading', () => {
-                    updateStatus(statusId, 'active', 'Active');
-                    for (const [key, elementId] of Object.entries(valueMap)) {
-                        let val = sensor[key];
-                        if (typeof val === 'number') val = val.toFixed(2);
-                        if (Array.isArray(val)) val = val.map(v => v.toFixed(2)).join(', ');
-                        updateValue(elementId, val);
-                    }
+                updateStatus(statusId, 'active', 'Active');
+                for (const [key, elementId] of Object.entries(valueMap)) {
+                let val = sensor[key];
+                if (typeof val === 'number') val = val.toFixed(2);
+                if (Array.isArray(val)) val = val.map(v => v.toFixed(2)).join(', ');
+                updateValue(elementId, val);
+                }
                 });
                 sensor.addEventListener('error', (event) => {
-                    console.error(`${SensorClass.name} error:`, event.error);
-                    if (event.error.name === 'NotAllowedError') {
-                        updateStatus(statusId, 'error', 'Permission Denied');
-                    } else if (event.error.name === 'NotReadableError') {
-                        updateStatus(statusId, 'error', 'Cannot Read');
-                    } else {
-                        updateStatus(statusId, 'error', event.error.name);
-                    }
+                console.error(`${SensorClass.name} error:`, event.error);
+                if (event.error.name === 'NotAllowedError') {
+                updateStatus(statusId, 'error', 'Permission Denied');
+                } else if (event.error.name === 'NotReadableError') {
+                updateStatus(statusId, 'error', 'Cannot Read');
+                } else {
+                updateStatus(statusId, 'error', event.error.name);
+                }
                 });
                 sensor.start();
                 return true;
-            } catch (error) {
+                } catch (error) {
                 console.error(`${SensorClass.name} init error:`, error);
                 return false;
-            }
-        }
+                }
+                }
 
-        // --- Specific Sensor Implementations ---
+                // --- Specific Sensor Implementations ---
 
-        function startAccelerometer() {
-            let started = false;
-            if (window.LinearAccelerationSensor) {
+                function startAccelerometer() {
+                let started = false;
+                if (window.LinearAccelerationSensor) {
                 started = initSensor(LinearAccelerationSensor, 'status-accel', {
-                    x: 'val-accel-x', y: 'val-accel-y', z: 'val-accel-z'
+                x: 'val-accel-x', y: 'val-accel-y', z: 'val-accel-z'
                 });
-            }
+                }
 
-            if (!started && window.Accelerometer) {
+                if (!started && window.Accelerometer) {
                 started = initSensor(Accelerometer, 'status-accel', {
-                    x: 'val-accel-x', y: 'val-accel-y', z: 'val-accel-z'
+                x: 'val-accel-x', y: 'val-accel-y', z: 'val-accel-z'
                 });
-            }
+                }
 
-            if (!started) {
+                if (!started) {
                 updateStatus('status-accel', 'inactive', 'Waiting for Fallback...');
-            }
-        }
+                }
+                }
 
-        function startGyroscope() {
-            if (window.Gyroscope) {
+                function startGyroscope() {
+                if (window.Gyroscope) {
                 const started = initSensor(Gyroscope, 'status-gyro', {
-                    x: 'val-gyro-x', y: 'val-gyro-y', z: 'val-gyro-z'
+                x: 'val-gyro-x', y: 'val-gyro-y', z: 'val-gyro-z'
                 });
                 if (!started) updateStatus('status-gyro', 'inactive', 'Waiting for Fallback...');
-            } else {
+                } else {
                 updateStatus('status-gyro', 'inactive', 'Waiting for Fallback...');
-            }
-        }
+                }
+                }
 
-        function startMagnetometer() {
-            if (window.Magnetometer) {
+                function startMagnetometer() {
+                if (window.Magnetometer) {
                 const started = initSensor(Magnetometer, 'status-mag', {
-                    x: 'val-mag-x', y: 'val-mag-y', z: 'val-mag-z'
+                x: 'val-mag-x', y: 'val-mag-y', z: 'val-mag-z'
                 });
                 if (!started) updateStatus('status-mag', 'error', 'Not Supported');
-            } else {
+                } else {
                 updateStatus('status-mag', 'error', 'Not Supported');
-            }
-        }
+                }
+                }
 
-        function startAbsoluteOrientation() {
-            if (window.AbsoluteOrientationSensor) {
+                function startAbsoluteOrientation() {
+                if (window.AbsoluteOrientationSensor) {
                 const started = initSensor(AbsoluteOrientationSensor, 'status-abs-orient', {
-                    quaternion: 'val-abs-alpha'
+                quaternion: 'val-abs-alpha'
                 });
                 if (!started) updateStatus('status-abs-orient', 'inactive', 'Waiting for Fallback...');
-            } else {
+                } else {
                 updateStatus('status-abs-orient', 'inactive', 'Waiting for Fallback...');
-            }
-        }
+                }
+                }
 
-        function startAmbientLight() {
-            if (window.AmbientLightSensor) {
+                function startAmbientLight() {
+                if (window.AmbientLightSensor) {
                 const started = initSensor(AmbientLightSensor, 'status-light', {
-                    illuminance: 'val-light'
+                illuminance: 'val-light'
                 });
                 if (!started) updateStatus('status-light', 'error', 'Not Supported');
-            } else {
+                } else {
                 updateStatus('status-light', 'error', 'Not Supported');
-            }
-        }
-
-        // --- Battery API ---
-        async function initBattery() {
-            const statusId = 'status-battery';
-            if ('getBattery' in navigator) {
-                try {
-                    const battery = await navigator.getBattery();
-
-                    function updateBattery() {
-                        updateStatus(statusId, 'active', 'Active');
-                        updateValue('val-battery-level', Math.round(battery.level * 100));
-                        updateValue('val-battery-charging', battery.charging ? 'Yes' : 'No');
-                    }
-
-                    updateBattery();
-                    battery.addEventListener('levelchange', updateBattery);
-                    battery.addEventListener('chargingchange', updateBattery);
-                } catch (e) {
-                    updateStatus(statusId, 'error', 'Error');
                 }
-            } else {
-                updateStatus(statusId, 'error', 'Not Supported');
-            }
-        }
+                }
 
-        // --- Geolocation API ---
-        function initGeolocation() {
-            const statusId = 'status-geo';
-            if ('geolocation' in navigator) {
+                // --- Battery API ---
+                async function initBattery() {
+                const statusId = 'status-battery';
+                if ('getBattery' in navigator) {
+                try {
+                const battery = await navigator.getBattery();
+
+                function updateBattery() {
+                updateStatus(statusId, 'active', 'Active');
+                updateValue('val-battery-level', Math.round(battery.level * 100));
+                updateValue('val-battery-charging', battery.charging ? 'Yes' : 'No');
+                }
+
+                updateBattery();
+                battery.addEventListener('levelchange', updateBattery);
+                battery.addEventListener('chargingchange', updateBattery);
+                } catch (e) {
+                updateStatus(statusId, 'error', 'Error');
+                }
+                } else {
+                updateStatus(statusId, 'error', 'Not Supported');
+                }
+                }
+
+                // --- Geolocation API ---
+                function initGeolocation() {
+                const statusId = 'status-geo';
+                if ('geolocation' in navigator) {
                 updateStatus(statusId, 'inactive', 'Requesting...');
                 navigator.geolocation.watchPosition(
-                    (position) => {
-                        updateStatus(statusId, 'active', 'Active');
-                        updateValue('val-geo-lat', position.coords.latitude.toFixed(4));
-                        updateValue('val-geo-long', position.coords.longitude.toFixed(4));
-                        updateValue('val-geo-acc', position.coords.accuracy.toFixed(1));
-                    },
-                    (error) => {
-                        let errMsg = error.message;
-                        if (error.code === error.PERMISSION_DENIED) errMsg = "Permission Denied";
-                        else if (error.code === error.POSITION_UNAVAILABLE) errMsg = "Pos Unavailable";
-                        else if (error.code === error.TIMEOUT) errMsg = "Timeout";
-                        updateStatus(statusId, 'error', errMsg);
-                    },
-                    {
-                        enableHighAccuracy: true,
-                        timeout: 10000,
-                        maximumAge: 0
-                    }
+                (position) => {
+                updateStatus(statusId, 'active', 'Active');
+                updateValue('val-geo-lat', position.coords.latitude.toFixed(4));
+                updateValue('val-geo-long', position.coords.longitude.toFixed(4));
+                updateValue('val-geo-acc', position.coords.accuracy.toFixed(1));
+                },
+                (error) => {
+                let errMsg = error.message;
+                if (error.code === error.PERMISSION_DENIED) errMsg = "Permission Denied";
+                else if (error.code === error.POSITION_UNAVAILABLE) errMsg = "Pos Unavailable";
+                else if (error.code === error.TIMEOUT) errMsg = "Timeout";
+                updateStatus(statusId, 'error', errMsg);
+                },
+                {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+                }
                 );
-            } else {
+                } else {
                 updateStatus(statusId, 'error', 'Not Supported');
-            }
-        }
+                }
+                }
 
-        // --- Network Info API ---
-        function initNetwork() {
-            const statusId = 'status-net';
-            const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+                // --- Network Info API ---
+                function initNetwork() {
+                const statusId = 'status-net';
+                const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
 
-            if (conn) {
+                if (conn) {
                 function updateNetwork() {
-                    updateValue('val-net-type', conn.effectiveType || 'unknown');
-                    updateValue('val-net-down', conn.downlink || 0);
-                    updateValue('val-net-rtt', conn.rtt || 0);
+                updateValue('val-net-type', conn.effectiveType || 'unknown');
+                updateValue('val-net-down', conn.downlink || 0);
+                updateValue('val-net-rtt', conn.rtt || 0);
                 }
 
                 updateNetwork();
                 conn.addEventListener('change', updateNetwork);
-            } else {
+                } else {
                 updateStatus(statusId, 'inactive', 'Not Supported');
-            }
-        }
+                }
+                }
 
-        // --- Web Bluetooth API ---
-        function initBluetooth() {
-            const statusId = 'status-bluetooth';
-            const scanBtn = document.getElementById('bt-scan-btn');
+                // --- Web Bluetooth API ---
+                function initBluetooth() {
+                const statusId = 'status-bluetooth';
+                const scanBtn = document.getElementById('bt-scan-btn');
 
-            if (!navigator.bluetooth) {
+                if (!navigator.bluetooth) {
                 if (isIOS()) {
-                    updateStatus(statusId, 'error', 'iOS Not Supported');
-                    scanBtn.title = 'Web Bluetooth is not supported on iOS Safari. Use Chrome on Android or desktop.';
+                updateStatus(statusId, 'error', 'iOS Not Supported');
+                scanBtn.title = 'Web Bluetooth is not supported on iOS Safari. Use Chrome on Android or desktop.';
                 } else {
-                    updateStatus(statusId, 'error', 'Not Supported');
+                updateStatus(statusId, 'error', 'Not Supported');
                 }
                 scanBtn.disabled = true;
                 return;
-            }
+                }
 
-            updateStatus(statusId, 'inactive', 'Ready to Scan');
+                updateStatus(statusId, 'inactive', 'Ready to Scan');
 
-            scanBtn.addEventListener('click', async () => {
+                scanBtn.addEventListener('click', async () => {
                 try {
-                    updateStatus(statusId, 'inactive', 'Scanning...');
-                    const device = await navigator.bluetooth.requestDevice({
-                        acceptAllDevices: true,
-                        optionalServices: ['battery_service', 'device_information']
-                    });
+                updateStatus(statusId, 'inactive', 'Scanning...');
+                const device = await navigator.bluetooth.requestDevice({
+                acceptAllDevices: true,
+                optionalServices: ['battery_service', 'device_information']
+                });
 
-                    updateValue('val-bt-device', device.name || 'Unknown Device');
-                    updateValue('val-bt-connected', 'Yes');
-                    updateStatus(statusId, 'active', 'Connected');
+                updateValue('val-bt-device', device.name || 'Unknown Device');
+                updateValue('val-bt-connected', 'Yes');
+                updateStatus(statusId, 'active', 'Connected');
 
-                    const server = await device.gatt.connect();
-                    updateValue('val-bt-gatt', server.connected ? 'Connected' : 'Disconnected');
+                const server = await device.gatt.connect();
+                updateValue('val-bt-gatt', server.connected ? 'Connected' : 'Disconnected');
 
-                    device.addEventListener('gattserverdisconnected', () => {
-                        updateValue('val-bt-connected', 'No');
-                        updateValue('val-bt-gatt', 'Disconnected');
-                        updateStatus(statusId, 'inactive', 'Disconnected');
-                    });
+                device.addEventListener('gattserverdisconnected', () => {
+                updateValue('val-bt-connected', 'No');
+                updateValue('val-bt-gatt', 'Disconnected');
+                updateStatus(statusId, 'inactive', 'Disconnected');
+                });
 
                 } catch (error) {
-                    console.error('Bluetooth error:', error);
-                    if (error.name === 'NotFoundError') {
-                        updateStatus(statusId, 'error', 'No Device Selected');
-                    } else {
-                        updateStatus(statusId, 'error', error.name);
-                    }
-                }
-            });
-        }
-
-        // --- BLE Scanner API ---
-        function initBLE() {
-            const statusId = 'status-ble';
-            const scanBtn = document.getElementById('ble-scan-btn');
-            let deviceCount = 0;
-
-            if (!navigator.bluetooth) {
-                if (isIOS()) {
-                    updateStatus(statusId, 'error', 'iOS Not Supported');
-                    scanBtn.title = 'Web Bluetooth is not supported on iOS Safari. Use Chrome on Android or desktop.';
+                console.error('Bluetooth error:', error);
+                if (error.name === 'NotFoundError') {
+                updateStatus(statusId, 'error', 'No Device Selected');
                 } else {
-                    updateStatus(statusId, 'error', 'Not Supported');
+                updateStatus(statusId, 'error', error.name);
+                }
+                }
+                });
+                }
+
+                // --- BLE Scanner API ---
+                function initBLE() {
+                const statusId = 'status-ble';
+                const scanBtn = document.getElementById('ble-scan-btn');
+                let deviceCount = 0;
+
+                if (!navigator.bluetooth) {
+                if (isIOS()) {
+                updateStatus(statusId, 'error', 'iOS Not Supported');
+                scanBtn.title = 'Web Bluetooth is not supported on iOS Safari. Use Chrome on Android or desktop.';
+                } else {
+                updateStatus(statusId, 'error', 'Not Supported');
                 }
                 scanBtn.disabled = true;
                 return;
-            }
+                }
 
-            updateStatus(statusId, 'inactive', 'Ready to Scan');
+                updateStatus(statusId, 'inactive', 'Ready to Scan');
 
-            scanBtn.addEventListener('click', async () => {
+                scanBtn.addEventListener('click', async () => {
                 try {
-                    updateStatus(statusId, 'inactive', 'Scanning...');
+                updateStatus(statusId, 'inactive', 'Scanning...');
 
-                    const device = await navigator.bluetooth.requestDevice({
-                        acceptAllDevices: true,
-                        optionalServices: ['battery_service']
-                    });
+                const device = await navigator.bluetooth.requestDevice({
+                acceptAllDevices: true,
+                optionalServices: ['battery_service']
+                });
 
-                    deviceCount++;
-                    updateValue('val-ble-count', deviceCount);
-                    updateValue('val-ble-last', device.name || device.id || 'Unknown');
-                    updateValue('val-ble-rssi', 'N/A');
-                    updateStatus(statusId, 'active', 'Device Found');
+                deviceCount++;
+                updateValue('val-ble-count', deviceCount);
+                updateValue('val-ble-last', device.name || device.id || 'Unknown');
+                updateValue('val-ble-rssi', 'N/A');
+                updateStatus(statusId, 'active', 'Device Found');
 
                 } catch (error) {
-                    console.error('BLE scan error:', error);
-                    if (error.name === 'NotFoundError') {
-                        updateStatus(statusId, 'inactive', 'Scan Cancelled');
-                    } else {
-                        updateStatus(statusId, 'error', error.name);
-                    }
+                console.error('BLE scan error:', error);
+                if (error.name === 'NotFoundError') {
+                updateStatus(statusId, 'inactive', 'Scan Cancelled');
+                } else {
+                updateStatus(statusId, 'error', error.name);
                 }
-            });
-        }
+                }
+                });
+                }
 
-        // --- Compass (using Geolocation heading or DeviceOrientation) ---
-        function initCompass() {
-            const statusId = 'status-compass';
+                // --- Compass (using Geolocation heading or DeviceOrientation) ---
+                function initCompass() {
+                const statusId = 'status-compass';
 
-            // Try Geolocation API with heading first
-            if ('geolocation' in navigator) {
+                // Try Geolocation API with heading first
+                if ('geolocation' in navigator) {
                 navigator.geolocation.watchPosition(
-                    (position) => {
-                        if (position.coords.heading !== null && position.coords.heading !== undefined) {
-                            updateStatus(statusId, 'active', 'GPS Heading');
-                            updateValue('val-compass-heading', position.coords.heading.toFixed(1));
-                            updateValue('val-compass-dir', getCompassDirection(position.coords.heading));
-                            updateValue('val-compass-acc', position.coords.headingAccuracy ? position.coords.headingAccuracy.toFixed(1) : 'N/A');
-                            return;
-                        }
-                    },
-                    (error) => {
-                        console.log('Geolocation heading not available, trying orientation...');
-                    },
-                    {
-                        enableHighAccuracy: true,
-                        maximumAge: 0
-                    }
+                (position) => {
+                if (position.coords.heading !== null && position.coords.heading !== undefined) {
+                updateStatus(statusId, 'active', 'GPS Heading');
+                updateValue('val-compass-heading', position.coords.heading.toFixed(1));
+                updateValue('val-compass-dir', getCompassDirection(position.coords.heading));
+                updateValue('val-compass-acc', position.coords.headingAccuracy ?
+                position.coords.headingAccuracy.toFixed(1) : 'N/A');
+                return;
+                }
+                },
+                (error) => {
+                console.log('Geolocation heading not available, trying orientation...');
+                },
+                {
+                enableHighAccuracy: true,
+                maximumAge: 0
+                }
                 );
-            }
+                }
 
-            // Fallback to DeviceOrientation (webkitCompassHeading for iOS)
-            if (window.DeviceOrientationEvent) {
+                // Fallback to DeviceOrientation (webkitCompassHeading for iOS)
+                if (window.DeviceOrientationEvent) {
                 window.addEventListener('deviceorientationabsolute', (event) => {
-                    if (event.absolute && event.alpha !== null) {
-                        updateStatus(statusId, 'active', 'Orientation');
-                        const heading = 360 - event.alpha; // Convert to compass heading
-                        updateValue('val-compass-heading', heading.toFixed(1));
-                        updateValue('val-compass-dir', getCompassDirection(heading));
-                        updateValue('val-compass-acc', event.webkitCompassAccuracy || 'N/A');
-                    }
+                if (event.absolute && event.alpha !== null) {
+                updateStatus(statusId, 'active', 'Orientation');
+                const heading = 360 - event.alpha; // Convert to compass heading
+                updateValue('val-compass-heading', heading.toFixed(1));
+                updateValue('val-compass-dir', getCompassDirection(heading));
+                updateValue('val-compass-acc', event.webkitCompassAccuracy || 'N/A');
+                }
                 }, true);
 
                 window.addEventListener('deviceorientation', (event) => {
-                    if (event.webkitCompassHeading !== undefined) {
-                        // iOS specific
-                        updateStatus(statusId, 'active', 'iOS Compass');
-                        updateValue('val-compass-heading', event.webkitCompassHeading.toFixed(1));
-                        updateValue('val-compass-dir', getCompassDirection(event.webkitCompassHeading));
-                        updateValue('val-compass-acc', event.webkitCompassAccuracy || 'N/A');
-                    } else if (event.alpha !== null && document.getElementById('status-compass').textContent === 'Inactive') {
-                        updateStatus(statusId, 'active', 'Orientation');
-                        const heading = 360 - event.alpha;
-                        updateValue('val-compass-heading', heading.toFixed(1));
-                        updateValue('val-compass-dir', getCompassDirection(heading));
-                        updateValue('val-compass-acc', 'N/A');
-                    }
+                if (event.webkitCompassHeading !== undefined) {
+                // iOS specific
+                updateStatus(statusId, 'active', 'iOS Compass');
+                updateValue('val-compass-heading', event.webkitCompassHeading.toFixed(1));
+                updateValue('val-compass-dir', getCompassDirection(event.webkitCompassHeading));
+                updateValue('val-compass-acc', event.webkitCompassAccuracy || 'N/A');
+                } else if (event.alpha !== null && document.getElementById('status-compass').textContent === 'Inactive')
+                {
+                updateStatus(statusId, 'active', 'Orientation');
+                const heading = 360 - event.alpha;
+                updateValue('val-compass-heading', heading.toFixed(1));
+                updateValue('val-compass-dir', getCompassDirection(heading));
+                updateValue('val-compass-acc', 'N/A');
+                }
                 }, true);
 
                 // Set timeout to show error if no data received
                 setTimeout(() => {
-                    if (document.getElementById('status-compass').textContent === 'Inactive') {
-                        updateStatus(statusId, 'error', 'Not Supported');
-                    }
-                }, 3000);
-            } else {
+                if (document.getElementById('status-compass').textContent === 'Inactive') {
                 updateStatus(statusId, 'error', 'Not Supported');
-            }
-        }
-
-        function getCompassDirection(heading) {
-            const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-            const index = Math.round(((heading % 360) / 45)) % 8;
-            return directions[index];
-        }
-
-        // --- Fallback: DeviceMotionEvent / DeviceOrientationEvent ---
-        function initLegacySensors() {
-            console.log("Initializing Legacy Sensors (DeviceMotion/Orientation)...");
-
-            if (window.DeviceMotionEvent) {
-                window.addEventListener('devicemotion', (event) => {
-                    const accelStatus = document.getElementById('status-accel').textContent;
-                    if (accelStatus !== 'Active') {
-                        updateStatus('status-accel', 'active', 'DeviceMotion');
-                        if (event.accelerationIncludingGravity) {
-                            updateValue('val-accel-x', event.accelerationIncludingGravity.x?.toFixed(2));
-                            updateValue('val-accel-y', event.accelerationIncludingGravity.y?.toFixed(2));
-                            updateValue('val-accel-z', event.accelerationIncludingGravity.z?.toFixed(2));
-                        }
-                    }
-
-                    const gyroStatus = document.getElementById('status-gyro').textContent;
-                    if (gyroStatus !== 'Active') {
-                        if (event.rotationRate && event.rotationRate.alpha !== null) {
-                            updateStatus('status-gyro', 'active', 'DeviceMotion');
-                            updateValue('val-gyro-x', event.rotationRate.alpha?.toFixed(2));
-                            updateValue('val-gyro-y', event.rotationRate.beta?.toFixed(2));
-                            updateValue('val-gyro-z', event.rotationRate.gamma?.toFixed(2));
-                        }
-                    }
-                });
-            }
-
-            if (window.DeviceOrientationEvent) {
-                window.addEventListener('deviceorientation', (event) => {
-                    const absStatus = document.getElementById('status-abs-orient').textContent;
-                    if (absStatus !== 'Active') {
-                        updateStatus('status-abs-orient', 'active', 'DeviceOrient');
-                        updateValue('val-abs-alpha', event.alpha?.toFixed(2));
-                        updateValue('val-abs-beta', event.beta?.toFixed(2));
-                        updateValue('val-abs-gamma', event.gamma?.toFixed(2));
-                    }
-                });
-            }
-        }
-
-        // --- Main Initialization ---
-
-        document.getElementById('start-btn').addEventListener('click', async () => {
-            document.getElementById('global-status').textContent = "Requesting permissions...";
-
-            // iOS 13+ Permission Request
-            if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
-                try {
-                    const permissionState = await DeviceMotionEvent.requestPermission();
-                    if (permissionState === 'granted') {
-                        initLegacySensors();
-                    } else {
-                        alert('Permission to access motion sensors was denied');
-                    }
-                } catch (error) {
-                    console.error(error);
                 }
-            } else {
+                }, 3000);
+                } else {
+                updateStatus(statusId, 'error', 'Not Supported');
+                }
+                }
+
+                function getCompassDirection(heading) {
+                const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+                const index = Math.round(((heading % 360) / 45)) % 8;
+                return directions[index];
+                }
+
+                // --- Fallback: DeviceMotionEvent / DeviceOrientationEvent ---
+                function initLegacySensors() {
+                console.log("Initializing Legacy Sensors (DeviceMotion/Orientation)...");
+
+                if (window.DeviceMotionEvent) {
+                window.addEventListener('devicemotion', (event) => {
+                const accelStatus = document.getElementById('status-accel').textContent;
+                if (accelStatus !== 'Active') {
+                updateStatus('status-accel', 'active', 'DeviceMotion');
+                if (event.accelerationIncludingGravity) {
+                updateValue('val-accel-x', event.accelerationIncludingGravity.x?.toFixed(2));
+                updateValue('val-accel-y', event.accelerationIncludingGravity.y?.toFixed(2));
+                updateValue('val-accel-z', event.accelerationIncludingGravity.z?.toFixed(2));
+                }
+                }
+
+                const gyroStatus = document.getElementById('status-gyro').textContent;
+                if (gyroStatus !== 'Active') {
+                if (event.rotationRate && event.rotationRate.alpha !== null) {
+                updateStatus('status-gyro', 'active', 'DeviceMotion');
+                updateValue('val-gyro-x', event.rotationRate.alpha?.toFixed(2));
+                updateValue('val-gyro-y', event.rotationRate.beta?.toFixed(2));
+                updateValue('val-gyro-z', event.rotationRate.gamma?.toFixed(2));
+                }
+                }
+                });
+                }
+
+                if (window.DeviceOrientationEvent) {
+                window.addEventListener('deviceorientation', (event) => {
+                const absStatus = document.getElementById('status-abs-orient').textContent;
+                if (absStatus !== 'Active') {
+                updateStatus('status-abs-orient', 'active', 'DeviceOrient');
+                updateValue('val-abs-alpha', event.alpha?.toFixed(2));
+                updateValue('val-abs-beta', event.beta?.toFixed(2));
+                updateValue('val-abs-gamma', event.gamma?.toFixed(2));
+                }
+                });
+                }
+                }
+
+                // --- Main Initialization ---
+
+                document.getElementById('start-btn').addEventListener('click', async () => {
+                document.getElementById('global-status').textContent = "Requesting permissions...";
+
+                // iOS 13+ Permission Request
+                if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission ===
+                'function') {
+                try {
+                const permissionState = await DeviceMotionEvent.requestPermission();
+                if (permissionState === 'granted') {
                 initLegacySensors();
-            }
+                } else {
+                alert('Permission to access motion sensors was denied');
+                }
+                } catch (error) {
+                console.error(error);
+                }
+                } else {
+                initLegacySensors();
+                }
 
-            // Trigger all sensors
-            startAccelerometer();
-            startGyroscope();
-            startMagnetometer();
-            startAbsoluteOrientation();
-            startAmbientLight();
-            initGeolocation();
-            initCompass();
+                // Trigger all sensors
+                startAccelerometer();
+                startGyroscope();
+                startMagnetometer();
+                startAbsoluteOrientation();
+                startAmbientLight();
+                initGeolocation();
+                initCompass();
 
-            document.getElementById('global-status').textContent = "Sensors initialized. Check cards for status.";
-        });
+                document.getElementById('global-status').textContent = "Sensors initialized. Check cards for status.";
+                });
 
-        // Initialize non-permission-heavy things immediately
-        initBattery();
-        initNetwork();
-        initBluetooth();
-        initBLE();
+                // Initialize non-permission-heavy things immediately
+                initBattery();
+                initNetwork();
+                initBluetooth();
+                initBLE();
 
-    </script>
+                </script>
 </body>
 
 </html>
