@@ -735,6 +735,13 @@
         }
 
         const COMPASS_DIRECTIONS = ['N', 'E', 'S', 'W'];
+        const OPPOSITE_DIRECTION_MAP = {
+            'N': 'S',
+            'S': 'N',
+            'E': 'W',
+            'W': 'E'
+        };
+
         const compassTurnState = {
             lastDirection: null,
             history: [],
@@ -754,6 +761,11 @@
             const normalized = ((heading % 360) + 360) % 360;
             const index = Math.floor(((normalized + 45) % 360) / 90) % COMPASS_DIRECTIONS.length;
             return COMPASS_DIRECTIONS[index];
+        }
+
+        function areOppositeDirections(dirA, dirB) {
+            if (!dirA || !dirB) return false;
+            return OPPOSITE_DIRECTION_MAP[dirA] === dirB;
         }
 
         function handleCompassReading(heading, accuracyValue) {
@@ -817,15 +829,15 @@
             }
 
             // U-turn detection logic:
-            // After 4 turns, if the 4th turn's destination matches the 1st turn's destination, it's a U-turn
-            // This means we've completed a full rotation and are heading in the same direction as after the 1st turn
+            // After 4 turns, if the 4th turn's destination is opposite the 1st turn's destination,
+            // we consider the user to have made a U-turn.
             let label;
             
             if (compassTurnState.turnSequence.length === 4) {
                 const firstTurnDestination = compassTurnState.turnSequence[0];
                 const fourthTurnDestination = compassTurnState.turnSequence[3];
                 
-                if (firstTurnDestination === fourthTurnDestination) {
+                if (areOppositeDirections(firstTurnDestination, fourthTurnDestination)) {
                     label = 'U-turn';
                 } else {
                     label = `${turnType} turn`;
