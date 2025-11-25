@@ -142,6 +142,17 @@
             font-family: 'Courier New', monospace;
         }
 
+        .data-item.turn-history {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .turn-history .data-value {
+            margin-top: 4px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
         .data-label {
             color: var(--text-secondary);
         }
@@ -342,22 +353,10 @@
                         id="val-compass-dir">--</span></li>
                 <li class="data-item"><span class="data-label">Accuracy:</span> <span class="data-value"
                         id="val-compass-acc">--</span>°</li>
-            </ul>
-        </div>
-
-        <!-- Turn Detector -->
-        <div class="sensor-card" id="card-turn">
-            <div class="card-header">
-                <span class="sensor-name">Turn Detector</span>
-                <span class="status-indicator status-inactive" id="status-turn">Inactive</span>
-            </div>
-            <ul class="data-list">
-                <li class="data-item"><span class="data-label">Heading:</span> <span class="data-value"
-                        id="val-turn-heading">--</span>°</li>
                 <li class="data-item"><span class="data-label">Last Turn:</span> <span class="data-value"
-                        id="val-turn-last">--</span></li>
-                <li class="data-item"><span class="data-label">Delta:</span> <span class="data-value"
-                        id="val-turn-angle">--</span>°</li>
+                        id="val-compass-turn">--</span></li>
+                <li class="data-item turn-history"><span class="data-label">Turn History:</span> <span
+                        class="data-value" id="val-compass-turn-history">--</span></li>
             </ul>
         </div>
 
@@ -403,49 +402,6 @@
                 el.className = `status-indicator status-${status}`;
                 el.textContent = text || status.charAt(0).toUpperCase() + status.slice(1);
             }
-        }
-
-        const turnDetectorState = {
-            lastHeading: null,
-            lastTurnTime: 0,
-            thresholdDeg: 35,
-            cooldownMs: 1500
-        };
-
-        function wrapAngle(angle) {
-            if (angle === null || angle === undefined) return null;
-            let wrapped = ((angle + 180) % 360 + 360) % 360 - 180;
-            if (wrapped === -180) wrapped = 180;
-            return wrapped;
-        }
-
-        function processTurnHeading(rawHeading) {
-            const statusId = 'status-turn';
-            const heading = rawHeading === null ? null : ((rawHeading % 360) + 360) % 360;
-            if (heading === null || Number.isNaN(heading)) return;
-
-            updateValue('val-turn-heading', heading.toFixed(1));
-            if (turnDetectorState.lastHeading === null) {
-                turnDetectorState.lastHeading = heading;
-                updateStatus(statusId, 'inactive', 'Tracking');
-                return;
-            }
-
-            const diff = wrapAngle(heading - turnDetectorState.lastHeading);
-            if (diff === null) return;
-            const absDiff = Math.abs(diff);
-            const now = Date.now();
-
-            if (absDiff >= turnDetectorState.thresholdDeg &&
-                now - turnDetectorState.lastTurnTime >= turnDetectorState.cooldownMs) {
-                const direction = diff > 0 ? 'Turned right' : 'Turned left';
-                updateStatus(statusId, 'active', direction);
-                updateValue('val-turn-last', direction);
-                updateValue('val-turn-angle', absDiff.toFixed(1));
-                turnDetectorState.lastTurnTime = now;
-            }
-
-            turnDetectorState.lastHeading = heading;
         }
 
         // Detect iOS
@@ -742,22 +698,46 @@
         // --- Compass (using Geolocation heading or DeviceOrientation) ---
         function initCompass() {
             const statusId = 'status-compass';
+
+            // Try Geolocation API with heading first
+            if ('geolocation' in navigator) {
+                navigator.geolocation.watchPosition(
+                    (position) => {
+                        if (position.coords.heading !== null && position.coords.heading !== undefined) {
+                            updateStatus(statusId, 'active', 'GPS Heading');
+                            handleCompassReading(position.coords.heading, position.coords.headingAccuracy);
+                            return;
+                        }
+                    },
+                    (error) => {
+                        console.log('Geolocation heading not available, trying orientation...');
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        maximumAge: 0
+                    }
+                );
+            }
+
+            // Fallback to DeviceOrientation (webkitCompassHeading for iOS)
             if (window.DeviceOrientationEvent) {
+                window.addEventListener('deviceorientationabsolute', (event) => {
+                    if (event.absolute && event.alpha !== null) {
+                        updateStatus(statusId, 'active', 'Orientation');
+                        const heading = 360 - event.alpha; // Convert to compass heading
+                        handleCompassReading(heading, event.webkitCompassAccuracy || 'N/A');
+                    }
+                }, true);
+
                 window.addEventListener('deviceorientation', (event) => {
                     if (event.webkitCompassHeading !== undefined) {
                         // iOS specific
-                        updateStatus(statusId, 'active', 'Compass');
-                        updateValue('val-compass-heading', event.webkitCompassHeading.toFixed(1));
-                        updateValue('val-compass-dir', getCompassDirection(event.webkitCompassHeading));
-                        updateValue('val-compass-acc', event.webkitCompassAccuracy || 'N/A');
-                        processTurnHeading(event.webkitCompassHeading);
-                    } else if (event.alpha !== null) {
-                        updateStatus(statusId, 'active', 'Compass');
+                        updateStatus(statusId, 'active', 'iOS Compass');
+                        handleCompassReading(event.webkitCompassHeading, event.webkitCompassAccuracy || 'N/A');
+                    } else if (event.alpha !== null && document.getElementById('status-compass').textContent === 'Inactive') {
+                        updateStatus(statusId, 'active', 'Orientation');
                         const heading = 360 - event.alpha;
-                        updateValue('val-compass-heading', heading.toFixed(1));
-                        updateValue('val-compass-dir', getCompassDirection(heading));
-                        updateValue('val-compass-acc', 'N/A');
-                        processTurnHeading(heading);
+                        handleCompassReading(heading, 'N/A');
                     }
                 }, true);
 
@@ -772,20 +752,75 @@
             }
         }
 
+        const COMPASS_DIRECTIONS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+        const compassTurnState = {
+            lastDirection: null,
+            history: []
+        };
+        const TURN_HISTORY_LIMIT = 6;
+
         function getCompassDirection(heading) {
-            const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-            const index = Math.round(((heading % 360) / 45)) % 8;
-            return directions[index];
+            const index = Math.round(((heading % 360) / 45)) % COMPASS_DIRECTIONS.length;
+            return COMPASS_DIRECTIONS[index];
         }
 
-        function initTurnDetector() {
-            const statusId = 'status-turn';
-            if (!window.DeviceOrientationEvent) {
-                updateStatus(statusId, 'error', 'Not Supported');
+        function handleCompassReading(heading, accuracyValue) {
+            if (typeof heading !== 'number' || Number.isNaN(heading)) return;
+            const normalizedHeading = ((heading % 360) + 360) % 360;
+            updateValue('val-compass-heading', normalizedHeading.toFixed(1));
+            const direction = getCompassDirection(normalizedHeading);
+            updateValue('val-compass-dir', direction);
+
+            if (typeof accuracyValue === 'number' && !Number.isNaN(accuracyValue)) {
+                updateValue('val-compass-acc', accuracyValue.toFixed(1));
+            } else if (typeof accuracyValue === 'string' && accuracyValue.trim() !== '') {
+                updateValue('val-compass-acc', accuracyValue);
+            } else {
+                updateValue('val-compass-acc', 'N/A');
+            }
+
+            detectCompassTurn(direction);
+        }
+
+        function detectCompassTurn(currentDirection) {
+            if (!currentDirection) return;
+
+            if (!compassTurnState.lastDirection) {
+                compassTurnState.lastDirection = currentDirection;
+                updateValue('val-compass-turn', 'Stable');
+                updateValue('val-compass-turn-history', 'Waiting for turn data');
                 return;
             }
 
-            updateStatus(statusId, 'inactive', 'Waiting for compass');
+            if (currentDirection === compassTurnState.lastDirection) return;
+
+            const previousDirection = compassTurnState.lastDirection;
+            const prevIndex = COMPASS_DIRECTIONS.indexOf(previousDirection);
+            const currIndex = COMPASS_DIRECTIONS.indexOf(currentDirection);
+
+            if (prevIndex === -1 || currIndex === -1) {
+                compassTurnState.lastDirection = currentDirection;
+                return;
+            }
+
+            const diff = (currIndex - prevIndex + COMPASS_DIRECTIONS.length) % COMPASS_DIRECTIONS.length;
+            if (diff === 0) return;
+
+            let label;
+            if (diff === 4) {
+                label = 'U-turn';
+            } else if (diff >= 1 && diff <= 3) {
+                label = 'Right turn';
+            } else {
+                label = 'Left turn';
+            }
+
+            const entry = `${label} (${previousDirection}→${currentDirection})`;
+            compassTurnState.history.unshift(entry);
+            compassTurnState.history = compassTurnState.history.slice(0, TURN_HISTORY_LIMIT);
+            updateValue('val-compass-turn', entry);
+            updateValue('val-compass-turn-history', compassTurnState.history.join(' • '));
+            compassTurnState.lastDirection = currentDirection;
         }
 
         // --- Fallback: DeviceMotionEvent / DeviceOrientationEvent ---
@@ -858,7 +893,6 @@
             startAmbientLight();
             initGeolocation();
             initCompass();
-            initTurnDetector();
 
             document.getElementById('global-status').textContent = "Sensors initialized. Check cards for status.";
         });
