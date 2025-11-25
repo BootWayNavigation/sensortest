@@ -345,6 +345,22 @@
             </ul>
         </div>
 
+        <!-- Turn Detector -->
+        <div class="sensor-card" id="card-turn">
+            <div class="card-header">
+                <span class="sensor-name">Turn Detector</span>
+                <span class="status-indicator status-inactive" id="status-turn">Inactive</span>
+            </div>
+            <ul class="data-list">
+                <li class="data-item"><span class="data-label">Heading:</span> <span class="data-value"
+                        id="val-turn-heading">--</span>°</li>
+                <li class="data-item"><span class="data-label">Last Turn:</span> <span class="data-value"
+                        id="val-turn-last">--</span></li>
+                <li class="data-item"><span class="data-label">Delta:</span> <span class="data-value"
+                        id="val-turn-angle">--</span>°</li>
+            </ul>
+        </div>
+
         <!-- Camera -->
         <div class="sensor-card" id="card-camera">
             <div class="card-header">
@@ -366,8 +382,6 @@
                         id="val-camera-facing">--</span></li>
                 <li class="data-item"><span class="data-label">Status:</span> <span class="data-value"
                         id="val-camera-status">--</span></li>
-                <li class="data-item"><span class="data-label">Last Turn:</span> <span class="data-value"
-                        id="val-camera-turn">None detected</span></li>
             </ul>
             <button id="camera-start-btn" style="margin-top: 10px; width: 100%; padding: 8px;">Start Camera</button>
             <button id="camera-stop-btn" style="margin-top: 10px; width: 100%; padding: 8px; display: none;">Stop
@@ -390,120 +404,6 @@
                 el.textContent = text || status.charAt(0).toUpperCase() + status.slice(1);
             }
         }
-
-        // Turn detection helper
-        class TurnDetector {
-            constructor(options = {}, onTurn = () => { }) {
-                const defaults = {
-                    gyroThreshold: 50,
-                    gyroWindowMs: 500,
-                    headingDelta: 30,
-                    compassWindowMs: 1000,
-                    cooldownMs: 2000
-                };
-                this.options = { ...defaults, ...options };
-                this.onTurn = onTurn;
-                this.gyroBuffer = [];
-                this.latestHeading = null;
-                this.pendingTurn = null;
-                this.lastTurnTime = 0;
-            }
-
-            addGyroReading(z, timestamp = performance.now()) {
-                if (!Number.isFinite(z)) return;
-                this.gyroBuffer.push({ timestamp, value: z });
-                this.trimBuffer(timestamp);
-
-                if (timestamp - this.lastTurnTime < this.options.cooldownMs) return;
-
-                const avg = this.getAverageRotation(timestamp);
-                if (avg >= this.options.gyroThreshold) {
-                    this.startPending('left', timestamp);
-                } else if (avg <= -this.options.gyroThreshold) {
-                    this.startPending('right', timestamp);
-                } else if (this.pendingTurn && timestamp - this.pendingTurn.startTime > this.options.gyroWindowMs) {
-                    this.pendingTurn = null;
-                }
-            }
-
-            addCompassHeading(heading, timestamp = performance.now()) {
-                if (!Number.isFinite(heading)) return;
-                const normalized = this.normalizeHeading(heading);
-                this.latestHeading = normalized;
-
-                if (!this.pendingTurn) return;
-                if (timestamp - this.pendingTurn.startTime > this.options.compassWindowMs) {
-                    this.pendingTurn = null;
-                    return;
-                }
-
-                if (this.pendingTurn.startHeading === null || this.pendingTurn.startHeading === undefined) {
-                    this.pendingTurn.startHeading = normalized;
-                    return;
-                }
-
-                const delta = this.headingDelta(this.pendingTurn.startHeading, normalized);
-                if (this.pendingTurn.direction === 'left' && delta >= this.options.headingDelta) {
-                    this.emitTurn('left', normalized, delta, timestamp);
-                } else if (this.pendingTurn.direction === 'right' && delta <= -this.options.headingDelta) {
-                    this.emitTurn('right', normalized, delta, timestamp);
-                }
-            }
-
-            startPending(direction, timestamp) {
-                if (this.pendingTurn && this.pendingTurn.direction === direction) return;
-                this.pendingTurn = {
-                    direction,
-                    startTime: timestamp,
-                    startHeading: this.latestHeading ?? null
-                };
-            }
-
-            emitTurn(direction, heading, delta, timestamp) {
-                this.lastTurnTime = timestamp;
-                this.pendingTurn = null;
-                if (typeof this.onTurn === 'function') {
-                    this.onTurn({
-                        direction,
-                        heading,
-                        delta,
-                        timestamp
-                    });
-                }
-            }
-
-            trimBuffer(now) {
-                const cutoff = now - this.options.gyroWindowMs;
-                while (this.gyroBuffer.length && this.gyroBuffer[0].timestamp < cutoff) {
-                    this.gyroBuffer.shift();
-                }
-            }
-
-            getAverageRotation(now) {
-                if (!this.gyroBuffer.length) return 0;
-                const relevant = this.gyroBuffer.filter(entry => now - entry.timestamp <= this.options.gyroWindowMs);
-                if (!relevant.length) return 0;
-                const sum = relevant.reduce((acc, entry) => acc + entry.value, 0);
-                return sum / relevant.length;
-            }
-
-            normalizeHeading(heading) {
-                return ((heading % 360) + 360) % 360;
-            }
-
-            headingDelta(start, current) {
-                let delta = current - start;
-                if (delta > 180) delta -= 360;
-                if (delta < -180) delta += 360;
-                return delta;
-            }
-        }
-
-        const turnDetector = new TurnDetector({}, ({ direction, heading, delta }) => {
-            const ts = new Date().toLocaleTimeString();
-            const display = `Turned ${direction} (~${Math.abs(Math.round(delta))}° @ ${ts}, heading ${Math.round(heading)}°)`;
-            updateValue('val-camera-turn', display);
-        });
 
         // Detect iOS
         function isIOS() {
@@ -528,7 +428,7 @@
 
         // --- Generic Sensor API Handlers ---
 
-        function initSensor(SensorClass, statusId, valueMap, options = { frequency: 60 }, onReading) {
+        function initSensor(SensorClass, statusId, valueMap, options = { frequency: 60 }) {
             if (!window[SensorClass.name]) {
                 console.log(`${SensorClass.name} not supported natively.`);
                 return false;
@@ -543,9 +443,6 @@
                         if (typeof val === 'number') val = val.toFixed(2);
                         if (Array.isArray(val)) val = val.map(v => v.toFixed(2)).join(', ');
                         updateValue(elementId, val);
-                    }
-                    if (typeof onReading === 'function') {
-                        onReading(sensor);
                     }
                 });
                 sensor.addEventListener('error', (event) => {
@@ -591,10 +488,6 @@
             if (window.Gyroscope) {
                 const started = initSensor(Gyroscope, 'status-gyro', {
                     x: 'val-gyro-x', y: 'val-gyro-y', z: 'val-gyro-z'
-                }, undefined, (sensor) => {
-                    if (typeof sensor.z === 'number') {
-                        turnDetector.addGyroReading(sensor.z, performance.now());
-                    }
                 });
                 if (!started) updateStatus('status-gyro', 'inactive', 'Waiting for Fallback...');
             } else {
@@ -816,7 +709,6 @@
                             updateValue('val-compass-heading', position.coords.heading.toFixed(1));
                             updateValue('val-compass-dir', getCompassDirection(position.coords.heading));
                             updateValue('val-compass-acc', position.coords.headingAccuracy ? position.coords.headingAccuracy.toFixed(1) : 'N/A');
-                            turnDetector.addCompassHeading(position.coords.heading);
                             return;
                         }
                     },
@@ -839,7 +731,6 @@
                         updateValue('val-compass-heading', heading.toFixed(1));
                         updateValue('val-compass-dir', getCompassDirection(heading));
                         updateValue('val-compass-acc', event.webkitCompassAccuracy || 'N/A');
-                        turnDetector.addCompassHeading(heading);
                     }
                 }, true);
 
@@ -850,14 +741,12 @@
                         updateValue('val-compass-heading', event.webkitCompassHeading.toFixed(1));
                         updateValue('val-compass-dir', getCompassDirection(event.webkitCompassHeading));
                         updateValue('val-compass-acc', event.webkitCompassAccuracy || 'N/A');
-                        turnDetector.addCompassHeading(event.webkitCompassHeading);
                     } else if (event.alpha !== null && document.getElementById('status-compass').textContent === 'Inactive') {
                         updateStatus(statusId, 'active', 'Orientation');
                         const heading = 360 - event.alpha;
                         updateValue('val-compass-heading', heading.toFixed(1));
                         updateValue('val-compass-dir', getCompassDirection(heading));
                         updateValue('val-compass-acc', 'N/A');
-                        turnDetector.addCompassHeading(heading);
                     }
                 }, true);
 
@@ -901,7 +790,6 @@
                             updateValue('val-gyro-x', event.rotationRate.alpha?.toFixed(2));
                             updateValue('val-gyro-y', event.rotationRate.beta?.toFixed(2));
                             updateValue('val-gyro-z', event.rotationRate.gamma?.toFixed(2));
-                            turnDetector.addGyroReading(event.rotationRate.alpha, performance.now());
                         }
                     }
                 });
