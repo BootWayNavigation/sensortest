@@ -405,6 +405,25 @@
             }
         }
 
+        const turnDetectorState = {
+            lastHeading: null,
+            lastTurnTime: 0,
+            thresholdDeg: 35,
+            cooldownMs: 1500
+        };
+
+        function normalizeHeading(alpha) {
+            if (alpha === null || alpha === undefined) return null;
+            return (360 - alpha + 360) % 360;
+        }
+
+        function wrapAngle(angle) {
+            if (angle === null || angle === undefined) return null;
+            let wrapped = ((angle + 180) % 360 + 360) % 360 - 180;
+            if (wrapped === -180) wrapped = 180;
+            return wrapped;
+        }
+
         // Detect iOS
         function isIOS() {
             return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
@@ -767,6 +786,44 @@
             return directions[index];
         }
 
+        function initTurnDetector() {
+            const statusId = 'status-turn';
+            if (!window.DeviceOrientationEvent) {
+                updateStatus(statusId, 'error', 'Not Supported');
+                return;
+            }
+
+            updateStatus(statusId, 'inactive', 'Waiting');
+            window.addEventListener('deviceorientation', (event) => {
+                const heading = normalizeHeading(event.alpha);
+                if (heading === null) return;
+
+                updateValue('val-turn-heading', heading.toFixed(1));
+
+                if (turnDetectorState.lastHeading === null) {
+                    turnDetectorState.lastHeading = heading;
+                    return;
+                }
+
+                const diff = wrapAngle(heading - turnDetectorState.lastHeading);
+                const absDiff = Math.abs(diff);
+                const now = Date.now();
+
+                if (diff !== null &&
+                    absDiff >= turnDetectorState.thresholdDeg &&
+                    now - turnDetectorState.lastTurnTime >= turnDetectorState.cooldownMs) {
+
+                    const direction = diff > 0 ? 'Turned right' : 'Turned left';
+                    updateStatus(statusId, 'active', direction);
+                    updateValue('val-turn-last', direction);
+                    updateValue('val-turn-angle', absDiff.toFixed(1));
+                    turnDetectorState.lastTurnTime = now;
+                }
+
+                turnDetectorState.lastHeading = heading;
+            }, true);
+        }
+
         // --- Fallback: DeviceMotionEvent / DeviceOrientationEvent ---
         function initLegacySensors() {
             console.log("Initializing Legacy Sensors (DeviceMotion/Orientation)...");
@@ -837,6 +894,7 @@
             startAmbientLight();
             initGeolocation();
             initCompass();
+            initTurnDetector();
 
             document.getElementById('global-status').textContent = "Sensors initialized. Check cards for status.";
         });
