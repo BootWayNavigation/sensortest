@@ -360,6 +360,28 @@
             </ul>
         </div>
 
+        <!-- U-Turn Detection -->
+        <div class="sensor-card" id="card-uturn">
+            <div class="card-header">
+                <span class="sensor-name">U-Turn Detection</span>
+                <span class="status-indicator status-inactive" id="status-uturn">Inactive</span>
+            </div>
+            <ul class="data-list">
+                <li class="data-item"><span class="data-label">Status:</span> <span class="data-value"
+                        id="val-uturn-status">--</span></li>
+                <li class="data-item"><span class="data-label">Heading Change:</span> <span class="data-value"
+                        id="val-uturn-heading-delta">--</span>°</li>
+                <li class="data-item"><span class="data-label">Rotation Rate:</span> <span class="data-value"
+                        id="val-uturn-rotation">--</span>°/s</li>
+                <li class="data-item"><span class="data-label">Turn Duration:</span> <span class="data-value"
+                        id="val-uturn-duration">--</span> s</li>
+                <li class="data-item"><span class="data-label">U-Turn Count:</span> <span class="data-value"
+                        id="val-uturn-count">0</span></li>
+                <li class="data-item turn-history"><span class="data-label">U-Turn History:</span> <span
+                        class="data-value" id="val-uturn-history">--</span></li>
+            </ul>
+        </div>
+
         <!-- Camera -->
         <div class="sensor-card" id="card-camera">
             <div class="card-header">
@@ -485,10 +507,26 @@
 
         function startGyroscope() {
             if (window.Gyroscope) {
-                const started = initSensor(Gyroscope, 'status-gyro', {
-                    x: 'val-gyro-x', y: 'val-gyro-y', z: 'val-gyro-z'
+                const sensor = new Gyroscope({ frequency: 60 });
+                sensor.addEventListener('reading', () => {
+                    updateStatus('status-gyro', 'active', 'Active');
+                    updateValue('val-gyro-x', sensor.x.toFixed(2));
+                    updateValue('val-gyro-y', sensor.y.toFixed(2));
+                    updateValue('val-gyro-z', sensor.z.toFixed(2));
+                    
+                    // Use Z-axis (yaw) rotation for U-turn detection
+                    // Convert from rad/s to deg/s
+                    const yawRate = Math.abs(sensor.z * (180 / Math.PI));
+                    if (yawRate > 0.1) { // Only update if significant
+                        uturnState.rotationRate = yawRate;
+                        updateValue('val-uturn-rotation', yawRate.toFixed(1));
+                    }
                 });
-                if (!started) updateStatus('status-gyro', 'inactive', 'Waiting for Fallback...');
+                sensor.addEventListener('error', (event) => {
+                    console.error('Gyroscope error:', event.error);
+                    updateStatus('status-gyro', 'error', event.error.name);
+                });
+                sensor.start();
             } else {
                 updateStatus('status-gyro', 'inactive', 'Waiting for Fallback...');
             }
@@ -699,6 +737,7 @@
         function initCompass() {
             const statusId = 'status-compass';
             resetCompassTurnState();
+            resetUTurnState();
 
             if (!window.DeviceOrientationEvent) {
                 updateStatus(statusId, 'error', 'Not Supported');
@@ -741,11 +780,45 @@
         };
         const TURN_HISTORY_LIMIT = 6;
 
+        // U-Turn Detection State
+        const uturnState = {
+            headingHistory: [], // Array of {heading, timestamp}
+            lastHeading: null,
+            lastTimestamp: null,
+            isTurning: false,
+            turnStartHeading: null,
+            turnStartTime: null,
+            uturnCount: 0,
+            uturnHistory: [],
+            rotationRate: 0,
+            maxHistorySize: 50, // Keep last 50 readings
+            uturnThreshold: 150, // Minimum heading change for U-turn (degrees)
+            maxTurnDuration: 10, // Maximum time for a U-turn (seconds)
+            minRotationRate: 30 // Minimum rotation rate for U-turn detection (degrees/second)
+        };
+
         function resetCompassTurnState() {
             compassTurnState.lastDirection = null;
             compassTurnState.history = [];
             updateValue('val-compass-turn', '--');
             updateValue('val-compass-turn-history', '--');
+        }
+
+        function resetUTurnState() {
+            uturnState.headingHistory = [];
+            uturnState.lastHeading = null;
+            uturnState.lastTimestamp = null;
+            uturnState.isTurning = false;
+            uturnState.turnStartHeading = null;
+            uturnState.turnStartTime = null;
+            uturnState.rotationRate = 0;
+            updateValue('val-uturn-status', 'Initializing...');
+            updateValue('val-uturn-heading-delta', '--');
+            updateValue('val-uturn-rotation', '--');
+            updateValue('val-uturn-duration', '--');
+            updateValue('val-uturn-count', '0');
+            updateValue('val-uturn-history', '--');
+            updateStatus('status-uturn', 'inactive', 'Waiting...');
         }
 
         function getCompassDirection(heading) {
@@ -770,6 +843,125 @@
             }
 
             detectCompassTurn(direction);
+            detectUTurn(normalizedHeading);
+        }
+
+        function detectUTurn(currentHeading) {
+            const now = Date.now();
+            
+            // Initialize
+            if (uturnState.lastHeading === null) {
+                uturnState.lastHeading = currentHeading;
+                uturnState.lastTimestamp = now;
+                updateValue('val-uturn-status', 'Monitoring...');
+                updateStatus('status-uturn', 'active', 'Active');
+                return;
+            }
+
+            // Calculate heading change (handle 360° wrap-around)
+            let headingDelta = currentHeading - uturnState.lastHeading;
+            if (headingDelta > 180) headingDelta -= 360;
+            if (headingDelta < -180) headingDelta += 360;
+            
+            const timeDelta = (now - uturnState.lastTimestamp) / 1000; // seconds
+            const rotationRate = timeDelta > 0 ? Math.abs(headingDelta / timeDelta) : 0;
+            
+            // Update rotation rate
+            uturnState.rotationRate = rotationRate;
+            updateValue('val-uturn-rotation', rotationRate.toFixed(1));
+            
+            // Add to history
+            uturnState.headingHistory.push({
+                heading: currentHeading,
+                timestamp: now,
+                delta: headingDelta
+            });
+            
+            // Keep history size manageable
+            if (uturnState.headingHistory.length > uturnState.maxHistorySize) {
+                uturnState.headingHistory.shift();
+            }
+            
+            // Detect if we're in a turn
+            const absDelta = Math.abs(headingDelta);
+            const isSignificantTurn = absDelta > 5; // More than 5 degrees change
+            
+            if (isSignificantTurn && !uturnState.isTurning) {
+                // Start of a potential turn
+                uturnState.isTurning = true;
+                uturnState.turnStartHeading = uturnState.lastHeading;
+                uturnState.turnStartTime = uturnState.lastTimestamp;
+                updateValue('val-uturn-status', 'Turning...');
+            }
+            
+            if (uturnState.isTurning) {
+                // Calculate total heading change since turn started
+                let totalDelta = currentHeading - uturnState.turnStartHeading;
+                if (totalDelta > 180) totalDelta -= 360;
+                if (totalDelta < -180) totalDelta += 360;
+                
+                const turnDuration = (now - uturnState.turnStartTime) / 1000;
+                const absTotalDelta = Math.abs(totalDelta);
+                
+                updateValue('val-uturn-heading-delta', absTotalDelta.toFixed(1));
+                updateValue('val-uturn-duration', turnDuration.toFixed(1));
+                
+                // Check for U-turn completion
+                // U-turn criteria:
+                // 1. Heading change is close to 180° (±30° tolerance)
+                // 2. Turn happens within reasonable time
+                // 3. Rotation rate is significant (optional, for better accuracy)
+                const isUTurnAngle = absTotalDelta >= uturnState.uturnThreshold && 
+                                    absTotalDelta <= 210; // 180° ± 30°
+                const isReasonableTime = turnDuration <= uturnState.maxTurnDuration && turnDuration >= 0.5;
+                const hasRotationRate = rotationRate >= uturnState.minRotationRate || 
+                                       uturnState.rotationRate >= uturnState.minRotationRate;
+                
+                if (isUTurnAngle && isReasonableTime) {
+                    // U-turn detected!
+                    uturnState.uturnCount++;
+                    const timestamp = new Date().toLocaleTimeString();
+                    const entry = `${timestamp}: ${absTotalDelta.toFixed(1)}° in ${turnDuration.toFixed(1)}s`;
+                    uturnState.uturnHistory.unshift(entry);
+                    uturnState.uturnHistory = uturnState.uturnHistory.slice(0, 5);
+                    
+                    updateValue('val-uturn-status', 'U-TURN DETECTED!');
+                    updateValue('val-uturn-count', uturnState.uturnCount);
+                    updateValue('val-uturn-history', uturnState.uturnHistory.join(' • '));
+                    
+                    // Reset turn state
+                    uturnState.isTurning = false;
+                    uturnState.turnStartHeading = null;
+                    uturnState.turnStartTime = null;
+                    
+                    // Visual feedback (you could add sound/notification here)
+                    const card = document.getElementById('card-uturn');
+                    card.style.borderColor = 'var(--error-color)';
+                    setTimeout(() => {
+                        card.style.borderColor = '';
+                    }, 2000);
+                } else if (!isSignificantTurn && uturnState.isTurning) {
+                    // Turn ended but wasn't a U-turn
+                    if (turnDuration > 0.5) {
+                        updateValue('val-uturn-status', 'Turn completed (not U-turn)');
+                    }
+                    uturnState.isTurning = false;
+                    uturnState.turnStartHeading = null;
+                    uturnState.turnStartTime = null;
+                } else if (turnDuration > uturnState.maxTurnDuration) {
+                    // Turn took too long, probably not a U-turn
+                    updateValue('val-uturn-status', 'Turn too slow');
+                    uturnState.isTurning = false;
+                    uturnState.turnStartHeading = null;
+                    uturnState.turnStartTime = null;
+                }
+            } else {
+                updateValue('val-uturn-status', 'Monitoring...');
+            }
+            
+            // Update last values
+            uturnState.lastHeading = currentHeading;
+            uturnState.lastTimestamp = now;
         }
 
         function detectCompassTurn(currentDirection) {
@@ -836,6 +1028,13 @@
                             updateValue('val-gyro-x', event.rotationRate.alpha?.toFixed(2));
                             updateValue('val-gyro-y', event.rotationRate.beta?.toFixed(2));
                             updateValue('val-gyro-z', event.rotationRate.gamma?.toFixed(2));
+                            
+                            // Use alpha (yaw) rotation for U-turn detection
+                            const yawRate = Math.abs(event.rotationRate.alpha || 0);
+                            if (yawRate > 0.1) {
+                                uturnState.rotationRate = yawRate;
+                                updateValue('val-uturn-rotation', yawRate.toFixed(1));
+                            }
                         }
                     }
                 });
