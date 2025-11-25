@@ -839,6 +839,8 @@
                 
                 if (areOppositeDirections(firstTurnDestination, fourthTurnDestination)) {
                     label = 'U-turn';
+                    // Reset sequence so the next potential U-turn starts counting fresh
+                    compassTurnState.turnSequence = [currentDirection];
                 } else {
                     label = `${turnType} turn`;
                 }
