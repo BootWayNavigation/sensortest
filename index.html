@@ -61,9 +61,14 @@
             font-weight: 600;
         }
 
-        button:hover {
+        button:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(56, 189, 248, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
         .dashboard-grid {
@@ -357,6 +362,12 @@
             }
         }
 
+        // Detect iOS
+        function isIOS() {
+            return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        }
+
         // --- HTTPS Check ---
         if (!window.isSecureContext) {
             const controls = document.querySelector('.controls');
@@ -553,7 +564,12 @@
             const scanBtn = document.getElementById('bt-scan-btn');
 
             if (!navigator.bluetooth) {
-                updateStatus(statusId, 'error', 'Not Supported');
+                if (isIOS()) {
+                    updateStatus(statusId, 'error', 'iOS Not Supported');
+                    scanBtn.title = 'Web Bluetooth is not supported on iOS Safari. Use Chrome on Android or desktop.';
+                } else {
+                    updateStatus(statusId, 'error', 'Not Supported');
+                }
                 scanBtn.disabled = true;
                 return;
             }
@@ -599,7 +615,12 @@
             let deviceCount = 0;
 
             if (!navigator.bluetooth) {
-                updateStatus(statusId, 'error', 'Not Supported');
+                if (isIOS()) {
+                    updateStatus(statusId, 'error', 'iOS Not Supported');
+                    scanBtn.title = 'Web Bluetooth is not supported on iOS Safari. Use Chrome on Android or desktop.';
+                } else {
+                    updateStatus(statusId, 'error', 'Not Supported');
+                }
                 scanBtn.disabled = true;
                 return;
             }
