@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -35,6 +36,7 @@
             margin-bottom: 10px;
             background: linear-gradient(to right, #38bdf8, #818cf8);
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
@@ -108,9 +110,19 @@
             background: rgba(255, 255, 255, 0.1);
         }
 
-        .status-active { color: var(--success-color); background: rgba(34, 197, 94, 0.1); }
-        .status-inactive { color: var(--text-secondary); }
-        .status-error { color: var(--error-color); background: rgba(239, 68, 68, 0.1); }
+        .status-active {
+            color: var(--success-color);
+            background: rgba(34, 197, 94, 0.1);
+        }
+
+        .status-inactive {
+            color: var(--text-secondary);
+        }
+
+        .status-error {
+            color: var(--error-color);
+            background: rgba(239, 68, 68, 0.1);
+        }
 
         .data-list {
             list-style: none;
@@ -141,6 +153,7 @@
         }
     </style>
 </head>
+
 <body>
 
     <header>
@@ -162,9 +175,12 @@
                 <span class="status-indicator status-inactive" id="status-accel">Inactive</span>
             </div>
             <ul class="data-list">
-                <li class="data-item"><span class="data-label">X:</span> <span class="data-value" id="val-accel-x">--</span></li>
-                <li class="data-item"><span class="data-label">Y:</span> <span class="data-value" id="val-accel-y">--</span></li>
-                <li class="data-item"><span class="data-label">Z:</span> <span class="data-value" id="val-accel-z">--</span></li>
+                <li class="data-item"><span class="data-label">X:</span> <span class="data-value"
+                        id="val-accel-x">--</span></li>
+                <li class="data-item"><span class="data-label">Y:</span> <span class="data-value"
+                        id="val-accel-y">--</span></li>
+                <li class="data-item"><span class="data-label">Z:</span> <span class="data-value"
+                        id="val-accel-z">--</span></li>
             </ul>
         </div>
 
@@ -175,9 +191,12 @@
                 <span class="status-indicator status-inactive" id="status-gyro">Inactive</span>
             </div>
             <ul class="data-list">
-                <li class="data-item"><span class="data-label">X:</span> <span class="data-value" id="val-gyro-x">--</span></li>
-                <li class="data-item"><span class="data-label">Y:</span> <span class="data-value" id="val-gyro-y">--</span></li>
-                <li class="data-item"><span class="data-label">Z:</span> <span class="data-value" id="val-gyro-z">--</span></li>
+                <li class="data-item"><span class="data-label">X:</span> <span class="data-value"
+                        id="val-gyro-x">--</span></li>
+                <li class="data-item"><span class="data-label">Y:</span> <span class="data-value"
+                        id="val-gyro-y">--</span></li>
+                <li class="data-item"><span class="data-label">Z:</span> <span class="data-value"
+                        id="val-gyro-z">--</span></li>
             </ul>
         </div>
 
@@ -188,9 +207,12 @@
                 <span class="status-indicator status-inactive" id="status-mag">Inactive</span>
             </div>
             <ul class="data-list">
-                <li class="data-item"><span class="data-label">X:</span> <span class="data-value" id="val-mag-x">--</span></li>
-                <li class="data-item"><span class="data-label">Y:</span> <span class="data-value" id="val-mag-y">--</span></li>
-                <li class="data-item"><span class="data-label">Z:</span> <span class="data-value" id="val-mag-z">--</span></li>
+                <li class="data-item"><span class="data-label">X:</span> <span class="data-value"
+                        id="val-mag-x">--</span></li>
+                <li class="data-item"><span class="data-label">Y:</span> <span class="data-value"
+                        id="val-mag-y">--</span></li>
+                <li class="data-item"><span class="data-label">Z:</span> <span class="data-value"
+                        id="val-mag-z">--</span></li>
             </ul>
         </div>
 
@@ -201,9 +223,12 @@
                 <span class="status-indicator status-inactive" id="status-abs-orient">Inactive</span>
             </div>
             <ul class="data-list">
-                <li class="data-item"><span class="data-label">Alpha (Z):</span> <span class="data-value" id="val-abs-alpha">--</span></li>
-                <li class="data-item"><span class="data-label">Beta (X):</span> <span class="data-value" id="val-abs-beta">--</span></li>
-                <li class="data-item"><span class="data-label">Gamma (Y):</span> <span class="data-value" id="val-abs-gamma">--</span></li>
+                <li class="data-item"><span class="data-label">Alpha (Z):</span> <span class="data-value"
+                        id="val-abs-alpha">--</span></li>
+                <li class="data-item"><span class="data-label">Beta (X):</span> <span class="data-value"
+                        id="val-abs-beta">--</span></li>
+                <li class="data-item"><span class="data-label">Gamma (Y):</span> <span class="data-value"
+                        id="val-abs-gamma">--</span></li>
             </ul>
         </div>
 
@@ -214,7 +239,8 @@
                 <span class="status-indicator status-inactive" id="status-light">Inactive</span>
             </div>
             <ul class="data-list">
-                <li class="data-item"><span class="data-label">Illuminance:</span> <span class="data-value" id="val-light">--</span> lux</li>
+                <li class="data-item"><span class="data-label">Illuminance:</span> <span class="data-value"
+                        id="val-light">--</span> lux</li>
             </ul>
         </div>
 
@@ -225,8 +251,10 @@
                 <span class="status-indicator status-inactive" id="status-battery">Checking...</span>
             </div>
             <ul class="data-list">
-                <li class="data-item"><span class="data-label">Level:</span> <span class="data-value" id="val-battery-level">--</span>%</li>
-                <li class="data-item"><span class="data-label">Charging:</span> <span class="data-value" id="val-battery-charging">--</span></li>
+                <li class="data-item"><span class="data-label">Level:</span> <span class="data-value"
+                        id="val-battery-level">--</span>%</li>
+                <li class="data-item"><span class="data-label">Charging:</span> <span class="data-value"
+                        id="val-battery-charging">--</span></li>
             </ul>
         </div>
 
@@ -237,9 +265,12 @@
                 <span class="status-indicator status-inactive" id="status-geo">Inactive</span>
             </div>
             <ul class="data-list">
-                <li class="data-item"><span class="data-label">Lat:</span> <span class="data-value" id="val-geo-lat">--</span></li>
-                <li class="data-item"><span class="data-label">Long:</span> <span class="data-value" id="val-geo-long">--</span></li>
-                <li class="data-item"><span class="data-label">Accuracy:</span> <span class="data-value" id="val-geo-acc">--</span> m</li>
+                <li class="data-item"><span class="data-label">Lat:</span> <span class="data-value"
+                        id="val-geo-lat">--</span></li>
+                <li class="data-item"><span class="data-label">Long:</span> <span class="data-value"
+                        id="val-geo-long">--</span></li>
+                <li class="data-item"><span class="data-label">Accuracy:</span> <span class="data-value"
+                        id="val-geo-acc">--</span> m</li>
             </ul>
         </div>
 
@@ -250,210 +281,18 @@
                 <span class="status-indicator status-active" id="status-net">Active</span>
             </div>
             <ul class="data-list">
-                <li class="data-item"><span class="data-label">Type:</span> <span class="data-value" id="val-net-type">--</span></li>
-                <li class="data-item"><span class="data-label">Downlink:</span> <span class="data-value" id="val-net-down">--</span> Mbps</li>
-                <li class="data-item"><span class="data-label">RTT:</span> <span class="data-value" id="val-net-rtt">--</span> ms</li>
+                <li class="data-item"><span class="data-label">Type:</span> <span class="data-value"
+                        id="val-net-type">--</span></li>
+                <li class="data-item"><span class="data-label">Downlink:</span> <span class="data-value"
+                        id="val-net-down">--</span> Mbps</li>
+                <li class="data-item"><span class="data-label">RTT:</span> <span class="data-value"
+                        id="val-net-rtt">--</span> ms</li>
             </ul>
         </div>
 
     </div>
 
-    <script>
-        // Helper to update UI
-        function updateValue(id, value) {
-            const el = document.getElementById(id);
-            if (el) el.textContent = value;
-        }
-
-        function updateStatus(id, status, text) {
-            const el = document.getElementById(id);
-            if (el) {
-            background: var(--card-bg);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 16px;
-            padding: 20px;
-            transition: transform 0.2s;
-        }
-
-        .sensor-card:hover {
-            transform: translateY(-5px);
-            border-color: var(--accent-color);
-        }
-
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            padding-bottom: 10px;
-        }
-
-        .sensor-name {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: var(--accent-color);
-        }
-
-        .status-indicator {
-            font-size: 0.8rem;
-            padding: 4px 8px;
-            border-radius: 12px;
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .status-active { color: var(--success-color); background: rgba(34, 197, 94, 0.1); }
-        .status-inactive { color: var(--text-secondary); }
-        .status-error { color: var(--error-color); background: rgba(239, 68, 68, 0.1); }
-
-        .data-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .data-item {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-            font-family: 'Courier New', monospace;
-        }
-
-        .data-label {
-            color: var(--text-secondary);
-        }
-
-        .data-value {
-            font-weight: bold;
-        }
-
-        .not-supported {
-            color: var(--error-color);
-            font-style: italic;
-            text-align: center;
-            margin-top: 20px;
-        }
-    </style>
-</head>
-<body>
-
-    <header>
-        <h1>Web Sensor Dashboard</h1>
-        <p class="subtitle">Real-time data from your device's sensors</p>
-    </header>
-
-    <div class="controls">
-        <button id="start-btn">Activate Sensors</button>
-        <p id="global-status" style="margin-top: 10px; font-size: 0.9rem; color: var(--text-secondary);"></p>
-    </div>
-
-    <div class="dashboard-grid">
-
-        <!-- Accelerometer -->
-        <div class="sensor-card" id="card-accel">
-            <div class="card-header">
-                <span class="sensor-name">Accelerometer</span>
-                <span class="status-indicator status-inactive" id="status-accel">Inactive</span>
-            </div>
-            <ul class="data-list">
-                <li class="data-item"><span class="data-label">X:</span> <span class="data-value" id="val-accel-x">--</span></li>
-                <li class="data-item"><span class="data-label">Y:</span> <span class="data-value" id="val-accel-y">--</span></li>
-                <li class="data-item"><span class="data-label">Z:</span> <span class="data-value" id="val-accel-z">--</span></li>
-            </ul>
-        </div>
-
-        <!-- Gyroscope -->
-        <div class="sensor-card" id="card-gyro">
-            <div class="card-header">
-                <span class="sensor-name">Gyroscope</span>
-                <span class="status-indicator status-inactive" id="status-gyro">Inactive</span>
-            </div>
-            <ul class="data-list">
-                <li class="data-item"><span class="data-label">X:</span> <span class="data-value" id="val-gyro-x">--</span></li>
-                <li class="data-item"><span class="data-label">Y:</span> <span class="data-value" id="val-gyro-y">--</span></li>
-                <li class="data-item"><span class="data-label">Z:</span> <span class="data-value" id="val-gyro-z">--</span></li>
-            </ul>
-        </div>
-
-        <!-- Magnetometer -->
-        <div class="sensor-card" id="card-mag">
-            <div class="card-header">
-                <span class="sensor-name">Magnetometer</span>
-                <span class="status-indicator status-inactive" id="status-mag">Inactive</span>
-            </div>
-            <ul class="data-list">
-                <li class="data-item"><span class="data-label">X:</span> <span class="data-value" id="val-mag-x">--</span></li>
-                <li class="data-item"><span class="data-label">Y:</span> <span class="data-value" id="val-mag-y">--</span></li>
-                <li class="data-item"><span class="data-label">Z:</span> <span class="data-value" id="val-mag-z">--</span></li>
-            </ul>
-        </div>
-
-        <!-- Absolute Orientation -->
-        <div class="sensor-card" id="card-abs-orient">
-            <div class="card-header">
-                <span class="sensor-name">Absolute Orientation</span>
-                <span class="status-indicator status-inactive" id="status-abs-orient">Inactive</span>
-            </div>
-            <ul class="data-list">
-                <li class="data-item"><span class="data-label">Alpha (Z):</span> <span class="data-value" id="val-abs-alpha">--</span></li>
-                <li class="data-item"><span class="data-label">Beta (X):</span> <span class="data-value" id="val-abs-beta">--</span></li>
-                <li class="data-item"><span class="data-label">Gamma (Y):</span> <span class="data-value" id="val-abs-gamma">--</span></li>
-            </ul>
-        </div>
-
-        <!-- Ambient Light -->
-        <div class="sensor-card" id="card-light">
-            <div class="card-header">
-                <span class="sensor-name">Ambient Light</span>
-                <span class="status-indicator status-inactive" id="status-light">Inactive</span>
-            </div>
-            <ul class="data-list">
-                <li class="data-item"><span class="data-label">Illuminance:</span> <span class="data-value" id="val-light">--</span> lux</li>
-            </ul>
-        </div>
-
-        <!-- Battery -->
-        <div class="sensor-card" id="card-battery">
-            <div class="card-header">
-                <span class="sensor-name">Battery</span>
-                <span class="status-indicator status-inactive" id="status-battery">Checking...</span>
-            </div>
-            <ul class="data-list">
-                <li class="data-item"><span class="data-label">Level:</span> <span class="data-value" id="val-battery-level">--</span>%</li>
-                <li class="data-item"><span class="data-label">Charging:</span> <span class="data-value" id="val-battery-charging">--</span></li>
-            </ul>
-        </div>
-
-        <!-- Geolocation -->
-        <div class="sensor-card" id="card-geo">
-            <div class="card-header">
-                <span class="sensor-name">Geolocation</span>
-                <span class="status-indicator status-inactive" id="status-geo">Inactive</span>
-            </div>
-            <ul class="data-list">
-                <li class="data-item"><span class="data-label">Lat:</span> <span class="data-value" id="val-geo-lat">--</span></li>
-                <li class="data-item"><span class="data-label">Long:</span> <span class="data-value" id="val-geo-long">--</span></li>
-                <li class="data-item"><span class="data-label">Accuracy:</span> <span class="data-value" id="val-geo-acc">--</span> m</li>
-            </ul>
-        </div>
-
-        <!-- Network -->
-        <div class="sensor-card" id="card-net">
-            <div class="card-header">
-                <span class="sensor-name">Network</span>
-                <span class="status-indicator status-active" id="status-net">Active</span>
-            </div>
-            <ul class="data-list">
-                <li class="data-item"><span class="data-label">Type:</span> <span class="data-value" id="val-net-type">--</span></li>
-                <li class="data-item"><span class="data-label">Downlink:</span> <span class="data-value" id="val-net-down">--</span> Mbps</li>
-                <li class="data-item"><span class="data-label">RTT:</span> <span class="data-value" id="val-net-rtt">--</span> ms</li>
-            </ul>
-        </div>
-
-    </div>
-
-    <script>
+    <script type="text/javascript">
         // Helper to update UI
         function updateValue(id, value) {
             const el = document.getElementById(id);
@@ -487,7 +326,6 @@
 
         function initSensor(SensorClass, statusId, valueMap, options = { frequency: 60 }) {
             if (!window[SensorClass.name]) {
-                // Don't mark as error yet, might have fallback
                 console.log(`${SensorClass.name} not supported natively.`);
                 return false;
             }
@@ -499,7 +337,6 @@
                     for (const [key, elementId] of Object.entries(valueMap)) {
                         let val = sensor[key];
                         if (typeof val === 'number') val = val.toFixed(2);
-                        // Handle arrays (like quaternion)
                         if (Array.isArray(val)) val = val.map(v => v.toFixed(2)).join(', ');
                         updateValue(elementId, val);
                     }
@@ -518,7 +355,6 @@
                 return true;
             } catch (error) {
                 console.error(`${SensorClass.name} init error:`, error);
-                // updateStatus(statusId, 'error', 'Error'); // Let fallback handle status if needed
                 return false;
             }
         }
@@ -526,55 +362,66 @@
         // --- Specific Sensor Implementations ---
 
         function startAccelerometer() {
-            // Try LinearAccelerationSensor first (gravity removed), else Accelerometer
             let started = false;
             if (window.LinearAccelerationSensor) {
                 started = initSensor(LinearAccelerationSensor, 'status-accel', {
                     x: 'val-accel-x', y: 'val-accel-y', z: 'val-accel-z'
                 });
-            } 
-            
-            if (!started) {
+            }
+
+            if (!started && window.Accelerometer) {
                 started = initSensor(Accelerometer, 'status-accel', {
                     x: 'val-accel-x', y: 'val-accel-y', z: 'val-accel-z'
                 });
             }
 
             if (!started) {
-                 // Fallback will be handled by initLegacySensors
-                 updateStatus('status-accel', 'inactive', 'Waiting for Fallback...');
+                updateStatus('status-accel', 'inactive', 'Waiting for Fallback...');
             }
         }
 
         function startGyroscope() {
-            const started = initSensor(Gyroscope, 'status-gyro', {
-                x: 'val-gyro-x', y: 'val-gyro-y', z: 'val-gyro-z'
-            });
-            if (!started) updateStatus('status-gyro', 'inactive', 'Waiting for Fallback...');
+            if (window.Gyroscope) {
+                const started = initSensor(Gyroscope, 'status-gyro', {
+                    x: 'val-gyro-x', y: 'val-gyro-y', z: 'val-gyro-z'
+                });
+                if (!started) updateStatus('status-gyro', 'inactive', 'Waiting for Fallback...');
+            } else {
+                updateStatus('status-gyro', 'inactive', 'Waiting for Fallback...');
+            }
         }
 
         function startMagnetometer() {
-            const started = initSensor(Magnetometer, 'status-mag', {
-                x: 'val-mag-x', y: 'val-mag-y', z: 'val-mag-z'
-            });
-            if (!started) updateStatus('status-mag', 'error', 'Not Supported');
+            if (window.Magnetometer) {
+                const started = initSensor(Magnetometer, 'status-mag', {
+                    x: 'val-mag-x', y: 'val-mag-y', z: 'val-mag-z'
+                });
+                if (!started) updateStatus('status-mag', 'error', 'Not Supported');
+            } else {
+                updateStatus('status-mag', 'error', 'Not Supported');
+            }
         }
 
         function startAbsoluteOrientation() {
-            const started = initSensor(AbsoluteOrientationSensor, 'status-abs-orient', {
-                quaternion: 'val-abs-alpha' // Mapping quaternion to first slot for now
-            });
-            
-            if (!started) {
+            if (window.AbsoluteOrientationSensor) {
+                const started = initSensor(AbsoluteOrientationSensor, 'status-abs-orient', {
+                    quaternion: 'val-abs-alpha'
+                });
+                if (!started) updateStatus('status-abs-orient', 'inactive', 'Waiting for Fallback...');
+            } else {
                 updateStatus('status-abs-orient', 'inactive', 'Waiting for Fallback...');
             }
         }
 
         function startAmbientLight() {
-            const started = initSensor(AmbientLightSensor, 'status-light', {
-                illuminance: 'val-light'
-            });
-            if (!started) updateStatus('status-light', 'error', 'Not Supported');
+            if (window.AmbientLightSensor) {
+                const started = initSensor(AmbientLightSensor, 'status-light', {
+                    illuminance: 'val-light'
+                });
+                if (!started) updateStatus('status-light', 'error', 'Not Supported');
+            } else {
+                updateStatus('status-light', 'error', 'Not Supported');
+            }
         }
 
         // --- Battery API ---
@@ -583,7 +430,7 @@
             if ('getBattery' in navigator) {
                 try {
                     const battery = await navigator.getBattery();
-                    
+
                     function updateBattery() {
                         updateStatus(statusId, 'active', 'Active');
                         updateValue('val-battery-level', Math.round(battery.level * 100));
@@ -620,9 +467,9 @@
                         else if (error.code === error.TIMEOUT) errMsg = "Timeout";
                         updateStatus(statusId, 'error', errMsg);
                     },
-                    { 
+                    {
                         enableHighAccuracy: true,
-                        timeout: 10000, // 10 second timeout
+                        timeout: 10000,
                         maximumAge: 0
                     }
                 );
@@ -635,38 +482,31 @@
         function initNetwork() {
             const statusId = 'status-net';
             const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-            
+
             if (conn) {
                 function updateNetwork() {
                     updateValue('val-net-type', conn.effectiveType || 'unknown');
                     updateValue('val-net-down', conn.downlink || 0);
                     updateValue('val-net-rtt', conn.rtt || 0);
                 }
-                
+
                 updateNetwork();
                 conn.addEventListener('change', updateNetwork);
             } else {
-                updateStatus(statusId, 'inactive', 'Not Supported'); 
+                updateStatus(statusId, 'inactive', 'Not Supported');
             }
         }
 
         // --- Fallback: DeviceMotionEvent / DeviceOrientationEvent ---
-        // Used if Generic Sensor API is not available (e.g., iOS, older Android)
         function initLegacySensors() {
             console.log("Initializing Legacy Sensors (DeviceMotion/Orientation)...");
-            
-            // Accelerometer & Gyroscope Fallback
+
             if (window.DeviceMotionEvent) {
                 window.addEventListener('devicemotion', (event) => {
-                    // Only update if we haven't successfully started the modern sensor
-                    // But checking that state is complex, so we'll just update if the element is not 'Active' from modern API
-                    // Or simpler: just overwrite. The modern API is preferred, but this is a dashboard.
-                    // Let's check the status text.
-                    
                     const accelStatus = document.getElementById('status-accel').textContent;
                     if (accelStatus !== 'Active') {
-                         updateStatus('status-accel', 'active', 'DeviceMotion');
-                         if(event.accelerationIncludingGravity) {
+                        updateStatus('status-accel', 'active', 'DeviceMotion');
+                        if (event.accelerationIncludingGravity) {
                             updateValue('val-accel-x', event.accelerationIncludingGravity.x?.toFixed(2));
                             updateValue('val-accel-y', event.accelerationIncludingGravity.y?.toFixed(2));
                             updateValue('val-accel-z', event.accelerationIncludingGravity.z?.toFixed(2));
@@ -675,7 +515,7 @@
 
                     const gyroStatus = document.getElementById('status-gyro').textContent;
                     if (gyroStatus !== 'Active') {
-                        if(event.rotationRate && event.rotationRate.alpha !== null) {
+                        if (event.rotationRate && event.rotationRate.alpha !== null) {
                             updateStatus('status-gyro', 'active', 'DeviceMotion');
                             updateValue('val-gyro-x', event.rotationRate.alpha?.toFixed(2));
                             updateValue('val-gyro-y', event.rotationRate.beta?.toFixed(2));
@@ -685,20 +525,11 @@
                 });
             }
 
-            // Absolute Orientation Fallback
             if (window.DeviceOrientationEvent) {
                 window.addEventListener('deviceorientation', (event) => {
                     const absStatus = document.getElementById('status-abs-orient').textContent;
-                    // Modern API gives quaternion, this gives Euler angles.
-                    // We'll display Euler angles if modern API isn't active.
                     if (absStatus !== 'Active') {
                         updateStatus('status-abs-orient', 'active', 'DeviceOrient');
-                        // We need to update labels because modern API uses quaternion
-                        // But the HTML has Alpha/Beta/Gamma labels.
-                        // Wait, the HTML has Alpha/Beta/Gamma labels.
-                        // The modern API code I wrote above mapped quaternion to 'val-abs-alpha'.
-                        // That's messy. Let's fix the labels if we are using DeviceOrientation.
-                        
                         updateValue('val-abs-alpha', event.alpha?.toFixed(2));
                         updateValue('val-abs-beta', event.beta?.toFixed(2));
                         updateValue('val-abs-gamma', event.gamma?.toFixed(2));
@@ -708,10 +539,10 @@
         }
 
         // --- Main Initialization ---
-        
+
         document.getElementById('start-btn').addEventListener('click', async () => {
             document.getElementById('global-status').textContent = "Requesting permissions...";
-            
+
             // iOS 13+ Permission Request
             if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
                 try {
@@ -725,7 +556,6 @@
                     console.error(error);
                 }
             } else {
-                // Non-iOS 13+ devices
                 initLegacySensors();
             }
 
@@ -736,14 +566,15 @@
             startAbsoluteOrientation();
             startAmbientLight();
             initGeolocation();
-            
+
             document.getElementById('global-status').textContent = "Sensors initialized. Check cards for status.";
         });
 
         // Initialize non-permission-heavy things immediately
         initBattery();
         initNetwork();
-        
+
     </script>
 </body>
+
 </html>
