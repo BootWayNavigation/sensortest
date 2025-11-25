@@ -734,7 +734,7 @@
             }, 3000);
         }
 
-        const COMPASS_DIRECTIONS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+        const COMPASS_DIRECTIONS = ['N', 'E', 'S', 'W'];
         const compassTurnState = {
             lastDirection: null,
             history: []
@@ -749,7 +749,8 @@
         }
 
         function getCompassDirection(heading) {
-            const index = Math.round(((heading % 360) / 45)) % COMPASS_DIRECTIONS.length;
+            const normalized = ((heading % 360) + 360) % 360;
+            const index = Math.floor(((normalized + 45) % 360) / 90) % COMPASS_DIRECTIONS.length;
             return COMPASS_DIRECTIONS[index];
         }
 
@@ -796,9 +797,9 @@
             if (diff === 0) return;
 
             let label;
-            if (diff === 4) {
+            if (diff === 2) {
                 label = 'U-turn';
-            } else if (diff >= 1 && diff <= 3) {
+            } else if (diff === 1) {
                 label = 'Right turn';
             } else {
                 label = 'Left turn';
