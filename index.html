@@ -345,6 +345,33 @@
             </ul>
         </div>
 
+        <!-- Camera -->
+        <div class="sensor-card" id="card-camera">
+            <div class="card-header">
+                <span class="sensor-name">Camera</span>
+                <span class="status-indicator status-inactive" id="status-camera">Inactive</span>
+            </div>
+            <div style="margin-bottom: 10px;">
+                <select id="camera-select"
+                    style="width: 100%; padding: 8px; border-radius: 4px; background: rgba(255,255,255,0.1); color: var(--text-primary); border: 1px solid rgba(255,255,255,0.2);">
+                    <option value="">Select Camera...</option>
+                </select>
+            </div>
+            <video id="camera-preview" autoplay playsinline
+                style="width: 100%; border-radius: 8px; background: #000; display: none; margin-bottom: 10px;"></video>
+            <ul class="data-list">
+                <li class="data-item"><span class="data-label">Resolution:</span> <span class="data-value"
+                        id="val-camera-res">--</span></li>
+                <li class="data-item"><span class="data-label">Facing:</span> <span class="data-value"
+                        id="val-camera-facing">--</span></li>
+                <li class="data-item"><span class="data-label">Status:</span> <span class="data-value"
+                        id="val-camera-status">--</span></li>
+            </ul>
+            <button id="camera-start-btn" style="margin-top: 10px; width: 100%; padding: 8px;">Start Camera</button>
+            <button id="camera-stop-btn" style="margin-top: 10px; width: 100%; padding: 8px; display: none;">Stop
+                Camera</button>
+        </div>
+
     </div>
 
     <script type="text/javascript">
@@ -798,11 +825,113 @@
             document.getElementById('global-status').textContent = "Sensors initialized. Check cards for status.";
         });
 
+        // --- Camera API ---
+        function initCamera() {
+            const statusId = 'status-camera';
+            const cameraSelect = document.getElementById('camera-select');
+            const cameraPreview = document.getElementById('camera-preview');
+            const startBtn = document.getElementById('camera-start-btn');
+            const stopBtn = document.getElementById('camera-stop-btn');
+            let currentStream = null;
+
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                updateStatus(statusId, 'error', 'Not Supported');
+                startBtn.disabled = true;
+                return;
+            }
+
+            updateStatus(statusId, 'inactive', 'Ready');
+
+            // Enumerate cameras
+            async function getCameras() {
+                try {
+                    const devices = await navigator.mediaDevices.enumerateDevices();
+                    const videoDevices = devices.filter(device => device.kind === 'videoinput');
+
+                    cameraSelect.innerHTML = '<option value="">Select Camera...</option>';
+                    videoDevices.forEach((device, index) => {
+                        const option = document.createElement('option');
+                        option.value = device.deviceId;
+                        option.text = device.label || `Camera ${index + 1}`;
+                        cameraSelect.appendChild(option);
+                    });
+
+                    if (videoDevices.length > 0) {
+                        updateValue('val-camera-status', `${videoDevices.length} camera(s) found`);
+                    } else {
+                        updateValue('val-camera-status', 'No cameras found');
+                    }
+                } catch (error) {
+                    console.error('Error enumerating cameras:', error);
+                    updateStatus(statusId, 'error', 'Enum Failed');
+                }
+            }
+
+            // Start camera
+            async function startCamera() {
+                try {
+                    const deviceId = cameraSelect.value;
+                    const constraints = {
+                        video: deviceId ? { deviceId: { exact: deviceId } } : true,
+                        audio: false
+                    };
+
+                    currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+                    cameraPreview.srcObject = currentStream;
+                    cameraPreview.style.display = 'block';
+                    startBtn.style.display = 'none';
+                    stopBtn.style.display = 'block';
+
+                    const track = currentStream.getVideoTracks()[0];
+                    const settings = track.getSettings();
+
+                    updateStatus(statusId, 'active', 'Streaming');
+                    updateValue('val-camera-res', `${settings.width}x${settings.height}`);
+                    updateValue('val-camera-facing', settings.facingMode || 'unknown');
+                    updateValue('val-camera-status', 'Active');
+
+                    // Refresh camera list with labels
+                    await getCameras();
+                } catch (error) {
+                    console.error('Error starting camera:', error);
+                    if (error.name === 'NotAllowedError') {
+                        updateStatus(statusId, 'error', 'Permission Denied');
+                    } else if (error.name === 'NotFoundError') {
+                        updateStatus(statusId, 'error', 'No Camera Found');
+                    } else {
+                        updateStatus(statusId, 'error', error.name);
+                    }
+                }
+            }
+
+            // Stop camera
+            function stopCamera() {
+                if (currentStream) {
+                    currentStream.getTracks().forEach(track => track.stop());
+                    currentStream = null;
+                }
+                cameraPreview.srcObject = null;
+                cameraPreview.style.display = 'none';
+                startBtn.style.display = 'block';
+                stopBtn.style.display = 'none';
+
+                updateStatus(statusId, 'inactive', 'Stopped');
+                updateValue('val-camera-status', 'Stopped');
+            }
+
+            startBtn.addEventListener('click', startCamera);
+            stopBtn.addEventListener('click', stopCamera);
+
+            // Initial camera enumeration
+            getCameras();
+        }
+
         // Initialize non-permission-heavy things immediately
         initBattery();
         initNetwork();
         initBluetooth();
         initBLE();
+        initCamera();
 
     </script>
 </body>
