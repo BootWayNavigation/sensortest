@@ -290,6 +290,56 @@
             </ul>
         </div>
 
+        <!-- Web Bluetooth -->
+        <div class="sensor-card" id="card-bluetooth">
+            <div class="card-header">
+                <span class="sensor-name">Web Bluetooth</span>
+                <span class="status-indicator status-inactive" id="status-bluetooth">Inactive</span>
+            </div>
+            <ul class="data-list">
+                <li class="data-item"><span class="data-label">Device:</span> <span class="data-value"
+                        id="val-bt-device">--</span></li>
+                <li class="data-item"><span class="data-label">Connected:</span> <span class="data-value"
+                        id="val-bt-connected">--</span></li>
+                <li class="data-item"><span class="data-label">GATT Server:</span> <span class="data-value"
+                        id="val-bt-gatt">--</span></li>
+            </ul>
+            <button id="bt-scan-btn" style="margin-top: 10px; width: 100%; padding: 8px;">Scan Devices</button>
+        </div>
+
+        <!-- BLE (Bluetooth Low Energy) -->
+        <div class="sensor-card" id="card-ble">
+            <div class="card-header">
+                <span class="sensor-name">BLE Scanner</span>
+                <span class="status-indicator status-inactive" id="status-ble">Inactive</span>
+            </div>
+            <ul class="data-list">
+                <li class="data-item"><span class="data-label">Devices Found:</span> <span class="data-value"
+                        id="val-ble-count">0</span></li>
+                <li class="data-item"><span class="data-label">Last Device:</span> <span class="data-value"
+                        id="val-ble-last">--</span></li>
+                <li class="data-item"><span class="data-label">RSSI:</span> <span class="data-value"
+                        id="val-ble-rssi">--</span> dBm</li>
+            </ul>
+            <button id="ble-scan-btn" style="margin-top: 10px; width: 100%; padding: 8px;">Scan BLE</button>
+        </div>
+
+        <!-- Compass (Heading) -->
+        <div class="sensor-card" id="card-compass">
+            <div class="card-header">
+                <span class="sensor-name">Compass</span>
+                <span class="status-indicator status-inactive" id="status-compass">Inactive</span>
+            </div>
+            <ul class="data-list">
+                <li class="data-item"><span class="data-label">Heading:</span> <span class="data-value"
+                        id="val-compass-heading">--</span>°</li>
+                <li class="data-item"><span class="data-label">Direction:</span> <span class="data-value"
+                        id="val-compass-dir">--</span></li>
+                <li class="data-item"><span class="data-label">Accuracy:</span> <span class="data-value"
+                        id="val-compass-acc">--</span>°</li>
+            </ul>
+        </div>
+
     </div>
 
     <script type="text/javascript">
@@ -497,6 +547,162 @@
             }
         }
 
+        // --- Web Bluetooth API ---
+        function initBluetooth() {
+            const statusId = 'status-bluetooth';
+            const scanBtn = document.getElementById('bt-scan-btn');
+
+            if (!navigator.bluetooth) {
+                updateStatus(statusId, 'error', 'Not Supported');
+                scanBtn.disabled = true;
+                return;
+            }
+
+            updateStatus(statusId, 'inactive', 'Ready to Scan');
+
+            scanBtn.addEventListener('click', async () => {
+                try {
+                    updateStatus(statusId, 'inactive', 'Scanning...');
+                    const device = await navigator.bluetooth.requestDevice({
+                        acceptAllDevices: true,
+                        optionalServices: ['battery_service', 'device_information']
+                    });
+
+                    updateValue('val-bt-device', device.name || 'Unknown Device');
+                    updateValue('val-bt-connected', 'Yes');
+                    updateStatus(statusId, 'active', 'Connected');
+
+                    const server = await device.gatt.connect();
+                    updateValue('val-bt-gatt', server.connected ? 'Connected' : 'Disconnected');
+
+                    device.addEventListener('gattserverdisconnected', () => {
+                        updateValue('val-bt-connected', 'No');
+                        updateValue('val-bt-gatt', 'Disconnected');
+                        updateStatus(statusId, 'inactive', 'Disconnected');
+                    });
+
+                } catch (error) {
+                    console.error('Bluetooth error:', error);
+                    if (error.name === 'NotFoundError') {
+                        updateStatus(statusId, 'error', 'No Device Selected');
+                    } else {
+                        updateStatus(statusId, 'error', error.name);
+                    }
+                }
+            });
+        }
+
+        // --- BLE Scanner API ---
+        function initBLE() {
+            const statusId = 'status-ble';
+            const scanBtn = document.getElementById('ble-scan-btn');
+            let deviceCount = 0;
+
+            if (!navigator.bluetooth) {
+                updateStatus(statusId, 'error', 'Not Supported');
+                scanBtn.disabled = true;
+                return;
+            }
+
+            updateStatus(statusId, 'inactive', 'Ready to Scan');
+
+            scanBtn.addEventListener('click', async () => {
+                try {
+                    updateStatus(statusId, 'inactive', 'Scanning...');
+
+                    const device = await navigator.bluetooth.requestDevice({
+                        acceptAllDevices: true,
+                        optionalServices: ['battery_service']
+                    });
+
+                    deviceCount++;
+                    updateValue('val-ble-count', deviceCount);
+                    updateValue('val-ble-last', device.name || device.id || 'Unknown');
+                    updateValue('val-ble-rssi', 'N/A');
+                    updateStatus(statusId, 'active', 'Device Found');
+
+                } catch (error) {
+                    console.error('BLE scan error:', error);
+                    if (error.name === 'NotFoundError') {
+                        updateStatus(statusId, 'inactive', 'Scan Cancelled');
+                    } else {
+                        updateStatus(statusId, 'error', error.name);
+                    }
+                }
+            });
+        }
+
+        // --- Compass (using Geolocation heading or DeviceOrientation) ---
+        function initCompass() {
+            const statusId = 'status-compass';
+
+            // Try Geolocation API with heading first
+            if ('geolocation' in navigator) {
+                navigator.geolocation.watchPosition(
+                    (position) => {
+                        if (position.coords.heading !== null && position.coords.heading !== undefined) {
+                            updateStatus(statusId, 'active', 'GPS Heading');
+                            updateValue('val-compass-heading', position.coords.heading.toFixed(1));
+                            updateValue('val-compass-dir', getCompassDirection(position.coords.heading));
+                            updateValue('val-compass-acc', position.coords.headingAccuracy ? position.coords.headingAccuracy.toFixed(1) : 'N/A');
+                            return;
+                        }
+                    },
+                    (error) => {
+                        console.log('Geolocation heading not available, trying orientation...');
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        maximumAge: 0
+                    }
+                );
+            }
+
+            // Fallback to DeviceOrientation (webkitCompassHeading for iOS)
+            if (window.DeviceOrientationEvent) {
+                window.addEventListener('deviceorientationabsolute', (event) => {
+                    if (event.absolute && event.alpha !== null) {
+                        updateStatus(statusId, 'active', 'Orientation');
+                        const heading = 360 - event.alpha; // Convert to compass heading
+                        updateValue('val-compass-heading', heading.toFixed(1));
+                        updateValue('val-compass-dir', getCompassDirection(heading));
+                        updateValue('val-compass-acc', event.webkitCompassAccuracy || 'N/A');
+                    }
+                }, true);
+
+                window.addEventListener('deviceorientation', (event) => {
+                    if (event.webkitCompassHeading !== undefined) {
+                        // iOS specific
+                        updateStatus(statusId, 'active', 'iOS Compass');
+                        updateValue('val-compass-heading', event.webkitCompassHeading.toFixed(1));
+                        updateValue('val-compass-dir', getCompassDirection(event.webkitCompassHeading));
+                        updateValue('val-compass-acc', event.webkitCompassAccuracy || 'N/A');
+                    } else if (event.alpha !== null && document.getElementById('status-compass').textContent === 'Inactive') {
+                        updateStatus(statusId, 'active', 'Orientation');
+                        const heading = 360 - event.alpha;
+                        updateValue('val-compass-heading', heading.toFixed(1));
+                        updateValue('val-compass-dir', getCompassDirection(heading));
+                        updateValue('val-compass-acc', 'N/A');
+                    }
+                }, true);
+
+                // Set timeout to show error if no data received
+                setTimeout(() => {
+                    if (document.getElementById('status-compass').textContent === 'Inactive') {
+                        updateStatus(statusId, 'error', 'Not Supported');
+                    }
+                }, 3000);
+            } else {
+                updateStatus(statusId, 'error', 'Not Supported');
+            }
+        }
+
+        function getCompassDirection(heading) {
+            const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+            const index = Math.round(((heading % 360) / 45)) % 8;
+            return directions[index];
+        }
+
         // --- Fallback: DeviceMotionEvent / DeviceOrientationEvent ---
         function initLegacySensors() {
             console.log("Initializing Legacy Sensors (DeviceMotion/Orientation)...");
@@ -566,6 +772,7 @@
             startAbsoluteOrientation();
             startAmbientLight();
             initGeolocation();
+            initCompass();
 
             document.getElementById('global-status').textContent = "Sensors initialized. Check cards for status.";
         });
@@ -573,6 +780,8 @@
         // Initialize non-permission-heavy things immediately
         initBattery();
         initNetwork();
+        initBluetooth();
+        initBLE();
 
     </script>
 </body>
