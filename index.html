@@ -412,11 +412,6 @@
             cooldownMs: 1500
         };
 
-        function normalizeHeading(alpha) {
-            if (alpha === null || alpha === undefined) return null;
-            return (360 - alpha + 360) % 360;
-        }
-
         function wrapAngle(angle) {
             if (angle === null || angle === undefined) return null;
             let wrapped = ((angle + 180) % 360 + 360) % 360 - 180;
@@ -747,53 +742,17 @@
         // --- Compass (using Geolocation heading or DeviceOrientation) ---
         function initCompass() {
             const statusId = 'status-compass';
-
-            // Try Geolocation API with heading first
-            if ('geolocation' in navigator) {
-                navigator.geolocation.watchPosition(
-                    (position) => {
-                        if (position.coords.heading !== null && position.coords.heading !== undefined) {
-                            updateStatus(statusId, 'active', 'GPS Heading');
-                            updateValue('val-compass-heading', position.coords.heading.toFixed(1));
-                            updateValue('val-compass-dir', getCompassDirection(position.coords.heading));
-                            updateValue('val-compass-acc', position.coords.headingAccuracy ? position.coords.headingAccuracy.toFixed(1) : 'N/A');
-                            processTurnHeading(position.coords.heading);
-                            return;
-                        }
-                    },
-                    (error) => {
-                        console.log('Geolocation heading not available, trying orientation...');
-                    },
-                    {
-                        enableHighAccuracy: true,
-                        maximumAge: 0
-                    }
-                );
-            }
-
-            // Fallback to DeviceOrientation (webkitCompassHeading for iOS)
             if (window.DeviceOrientationEvent) {
-                window.addEventListener('deviceorientationabsolute', (event) => {
-                    if (event.absolute && event.alpha !== null) {
-                        updateStatus(statusId, 'active', 'Orientation');
-                        const heading = 360 - event.alpha; // Convert to compass heading
-                        updateValue('val-compass-heading', heading.toFixed(1));
-                        updateValue('val-compass-dir', getCompassDirection(heading));
-                        updateValue('val-compass-acc', event.webkitCompassAccuracy || 'N/A');
-                        processTurnHeading(heading);
-                    }
-                }, true);
-
                 window.addEventListener('deviceorientation', (event) => {
                     if (event.webkitCompassHeading !== undefined) {
                         // iOS specific
-                        updateStatus(statusId, 'active', 'iOS Compass');
+                        updateStatus(statusId, 'active', 'Compass');
                         updateValue('val-compass-heading', event.webkitCompassHeading.toFixed(1));
                         updateValue('val-compass-dir', getCompassDirection(event.webkitCompassHeading));
                         updateValue('val-compass-acc', event.webkitCompassAccuracy || 'N/A');
                         processTurnHeading(event.webkitCompassHeading);
-                    } else if (event.alpha !== null && document.getElementById('status-compass').textContent === 'Inactive') {
-                        updateStatus(statusId, 'active', 'Orientation');
+                    } else if (event.alpha !== null) {
+                        updateStatus(statusId, 'active', 'Compass');
                         const heading = 360 - event.alpha;
                         updateValue('val-compass-heading', heading.toFixed(1));
                         updateValue('val-compass-dir', getCompassDirection(heading));
@@ -826,20 +785,7 @@
                 return;
             }
 
-            updateStatus(statusId, 'inactive', 'Waiting');
-
-            window.addEventListener('deviceorientationabsolute', (event) => {
-                if (!event.absolute || event.alpha === null) return;
-                processTurnHeading(360 - event.alpha);
-            }, true);
-
-            window.addEventListener('deviceorientation', (event) => {
-                if (event.webkitCompassHeading !== undefined) {
-                    processTurnHeading(event.webkitCompassHeading);
-                } else if (event.alpha !== null) {
-                    processTurnHeading(360 - event.alpha);
-                }
-            }, true);
+            updateStatus(statusId, 'inactive', 'Waiting for compass');
         }
 
         // --- Fallback: DeviceMotionEvent / DeviceOrientationEvent ---
