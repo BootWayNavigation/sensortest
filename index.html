@@ -424,6 +424,35 @@
             return wrapped;
         }
 
+        function processTurnHeading(rawHeading) {
+            const statusId = 'status-turn';
+            const heading = rawHeading === null ? null : ((rawHeading % 360) + 360) % 360;
+            if (heading === null || Number.isNaN(heading)) return;
+
+            updateValue('val-turn-heading', heading.toFixed(1));
+            if (turnDetectorState.lastHeading === null) {
+                turnDetectorState.lastHeading = heading;
+                updateStatus(statusId, 'inactive', 'Tracking');
+                return;
+            }
+
+            const diff = wrapAngle(heading - turnDetectorState.lastHeading);
+            if (diff === null) return;
+            const absDiff = Math.abs(diff);
+            const now = Date.now();
+
+            if (absDiff >= turnDetectorState.thresholdDeg &&
+                now - turnDetectorState.lastTurnTime >= turnDetectorState.cooldownMs) {
+                const direction = diff > 0 ? 'Turned right' : 'Turned left';
+                updateStatus(statusId, 'active', direction);
+                updateValue('val-turn-last', direction);
+                updateValue('val-turn-angle', absDiff.toFixed(1));
+                turnDetectorState.lastTurnTime = now;
+            }
+
+            turnDetectorState.lastHeading = heading;
+        }
+
         // Detect iOS
         function isIOS() {
             return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
@@ -728,6 +757,7 @@
                             updateValue('val-compass-heading', position.coords.heading.toFixed(1));
                             updateValue('val-compass-dir', getCompassDirection(position.coords.heading));
                             updateValue('val-compass-acc', position.coords.headingAccuracy ? position.coords.headingAccuracy.toFixed(1) : 'N/A');
+                            processTurnHeading(position.coords.heading);
                             return;
                         }
                     },
@@ -750,6 +780,7 @@
                         updateValue('val-compass-heading', heading.toFixed(1));
                         updateValue('val-compass-dir', getCompassDirection(heading));
                         updateValue('val-compass-acc', event.webkitCompassAccuracy || 'N/A');
+                        processTurnHeading(heading);
                     }
                 }, true);
 
@@ -760,12 +791,14 @@
                         updateValue('val-compass-heading', event.webkitCompassHeading.toFixed(1));
                         updateValue('val-compass-dir', getCompassDirection(event.webkitCompassHeading));
                         updateValue('val-compass-acc', event.webkitCompassAccuracy || 'N/A');
+                        processTurnHeading(event.webkitCompassHeading);
                     } else if (event.alpha !== null && document.getElementById('status-compass').textContent === 'Inactive') {
                         updateStatus(statusId, 'active', 'Orientation');
                         const heading = 360 - event.alpha;
                         updateValue('val-compass-heading', heading.toFixed(1));
                         updateValue('val-compass-dir', getCompassDirection(heading));
                         updateValue('val-compass-acc', 'N/A');
+                        processTurnHeading(heading);
                     }
                 }, true);
 
@@ -794,33 +827,18 @@
             }
 
             updateStatus(statusId, 'inactive', 'Waiting');
+
+            window.addEventListener('deviceorientationabsolute', (event) => {
+                if (!event.absolute || event.alpha === null) return;
+                processTurnHeading(360 - event.alpha);
+            }, true);
+
             window.addEventListener('deviceorientation', (event) => {
-                const heading = normalizeHeading(event.alpha);
-                if (heading === null) return;
-
-                updateValue('val-turn-heading', heading.toFixed(1));
-
-                if (turnDetectorState.lastHeading === null) {
-                    turnDetectorState.lastHeading = heading;
-                    return;
+                if (event.webkitCompassHeading !== undefined) {
+                    processTurnHeading(event.webkitCompassHeading);
+                } else if (event.alpha !== null) {
+                    processTurnHeading(360 - event.alpha);
                 }
-
-                const diff = wrapAngle(heading - turnDetectorState.lastHeading);
-                const absDiff = Math.abs(diff);
-                const now = Date.now();
-
-                if (diff !== null &&
-                    absDiff >= turnDetectorState.thresholdDeg &&
-                    now - turnDetectorState.lastTurnTime >= turnDetectorState.cooldownMs) {
-
-                    const direction = diff > 0 ? 'Turned right' : 'Turned left';
-                    updateStatus(statusId, 'active', direction);
-                    updateValue('val-turn-last', direction);
-                    updateValue('val-turn-angle', absDiff.toFixed(1));
-                    turnDetectorState.lastTurnTime = now;
-                }
-
-                turnDetectorState.lastHeading = heading;
             }, true);
         }
 
